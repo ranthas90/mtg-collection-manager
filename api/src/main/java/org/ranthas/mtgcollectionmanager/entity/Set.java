@@ -3,6 +3,7 @@ package org.ranthas.mtgcollectionmanager.entity;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import org.ranthas.mtgcollectionmanager.constant.DateTimeConstants;
+import org.ranthas.mtgcollectionmanager.dto.scryfall.ScryfallSet;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -44,6 +45,17 @@ public class Set {
     private Double foilPrice;
 
     public Set() {
+    }
+
+    public Set(ScryfallSet scryfallSet) {
+        id = scryfallSet.getId();
+        code = scryfallSet.getCode();
+        name = scryfallSet.getName();
+        totalCards = scryfallSet.getCardCount();
+        ownedCards = 0L;
+        iconPath = scryfallSet.getIconPath();
+        releaseDate = LocalDate.parse(scryfallSet.getReleasedAt(), DateTimeConstants.DATE_FORMATTER);
+        setType = scryfallSet.getSetType().replace("_", " ");
     }
 
     public UUID getId() {
@@ -114,19 +126,19 @@ public class Set {
         this.ownedCards = ownedCards;
     }
 
-    public double getPrice() {
+    public Double getPrice() {
         return price;
     }
 
-    public void setPrice(double price) {
+    public void setPrice(Double price) {
         this.price = price;
     }
 
-    public double getFoilPrice() {
+    public Double getFoilPrice() {
         return foilPrice;
     }
 
-    public void setFoilPrice(double foilPrice) {
+    public void setFoilPrice(Double foilPrice) {
         this.foilPrice = foilPrice;
     }
 

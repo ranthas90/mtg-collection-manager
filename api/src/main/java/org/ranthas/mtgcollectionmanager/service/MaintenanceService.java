@@ -73,7 +73,7 @@ public class MaintenanceService {
 
         for (ScryfallSet scryfallSet : scryfallSets) {
             LOGGER.info("Saving set [{}] :: {}", scryfallSet.getCode(), scryfallSet.getName());
-            Set set = scryfallConverter.convert(scryfallSet);
+            Set set = new Set(scryfallSet);
             setRepository.save(set);
         }
         LOGGER.info("Imported {} sets into the database", scryfallSets.size());

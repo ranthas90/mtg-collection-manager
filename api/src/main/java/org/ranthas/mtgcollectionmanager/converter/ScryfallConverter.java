@@ -7,22 +7,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class ScryfallConverter {
 
-    public Set convert(ScryfallSet scryfallSet) {
-
-        Set set = new Set();
-
-        set.setId(scryfallSet.getId());
-        set.setCode(scryfallSet.getCode());
-        set.setName(scryfallSet.getName());
-        set.setTotalCards(scryfallSet.getCardCount());
-        set.setOwnedCards(0L);
-        set.setIconPath(scryfallSet.getIconPath());
-        set.setReleaseDate(scryfallSet.getReleasedAt());
-        set.setSetType(scryfallSet.getSetType());
-
-        return set;
-    }
-
     public Card convert(ScryfallCard scryfallCard) {
 
         Card card = new Card();
