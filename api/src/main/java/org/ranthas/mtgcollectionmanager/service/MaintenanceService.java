@@ -56,7 +56,7 @@ public class MaintenanceService {
 
         for (ScryfallSymbol scryfallSymbol : scryfallSymbols) {
             LOGGER.info("Saving symbol {}", scryfallSymbol.getSymbol());
-            Symbol symbol = scryfallConverter.convert(scryfallSymbol);
+            Symbol symbol = new Symbol(scryfallSymbol);
             symbolRepository.save(symbol);
         }
         LOGGER.info("Imported {} symbols into the database", scryfallSymbols.size());

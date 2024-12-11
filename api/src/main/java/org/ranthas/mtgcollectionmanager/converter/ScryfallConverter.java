@@ -32,14 +32,4 @@ public class ScryfallConverter {
 
         return card;
     }
-
-    public Symbol convert(ScryfallSymbol scryfallSymbol) {
-
-        Symbol symbol = new Symbol();
-
-        symbol.setCode(scryfallSymbol.getSymbol());
-        symbol.setImagePath(scryfallSymbol.getSvgPath());
-
-        return symbol;
-    }
 }

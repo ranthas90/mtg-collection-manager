@@ -8,6 +8,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.ranthas.mtgcollectionmanager.dto.scryfall.ScryfallSymbol;
+
 import java.util.Objects;
 
 @Entity
@@ -25,6 +27,12 @@ public class Symbol {
     private String imagePath;
 
     public Symbol() {
+    }
+
+    public Symbol(ScryfallSymbol scryfallSymbol) {
+        id = null;
+        code = scryfallSymbol.getSymbol();
+        imagePath = scryfallSymbol.getSvgPath();
     }
 
     public UUID getId() {
