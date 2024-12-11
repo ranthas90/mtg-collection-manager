@@ -1,6 +1,9 @@
 package org.ranthas.mtgcollectionmanager.entity;
 
 import jakarta.persistence.*;
+import org.ranthas.mtgcollectionmanager.dto.scryfall.ScryfallCard;
+import org.ranthas.mtgcollectionmanager.dto.scryfall.ScryfallCardPrice;
+
 import java.util.UUID;
 import java.util.Objects;
 
@@ -55,6 +58,30 @@ public class Card {
     private Double foilPrice;
 
     public Card() {
+    }
+
+    public Card(ScryfallCard scryfallCard, Set set, long cardIndex) {
+        id = scryfallCard.getId();
+        scryfallUri = scryfallCard.getScryfallUri();
+        cardmarketId = scryfallCard.getCardmarketId();
+        name = scryfallCard.getName();
+        manaCost = scryfallCard.getManaCost();
+        typeLine = scryfallCard.getTypeLine();
+        rarity = scryfallCard.getRarity();
+        collectorNumber = scryfallCard.getCollectorNumber();
+
+        if (scryfallCard.getCardPrices() != null) {
+            ScryfallCardPrice cardPrices = scryfallCard.getCardPrices();
+            foilPrice = cardPrices.getEurFoil() == null ? 0.0D : Double.parseDouble(cardPrices.getEurFoil());
+            nonFoilPrice = cardPrices.getEur() == null ? 0.0D : Double.parseDouble(cardPrices.getEur());
+        }
+
+        if (scryfallCard.getCardImages() != null) {
+            image = scryfallCard.getCardImages().getArtCrop();
+        }
+
+        mtgSet = set;
+        numericCollectorNumber = cardIndex;
     }
 
     public UUID getId() {
@@ -169,20 +196,12 @@ public class Card {
         this.nonFoilPrice = nonFoilPrice;
     }
 
-    public void setNonFoilPrice(String nonFoilPrice) {
-        this.nonFoilPrice = nonFoilPrice == null ? 0.0D : Double.parseDouble(nonFoilPrice);
-    }
-
     public Double getFoilPrice() {
         return this.foilPrice;
     }
 
     public void setFoilPrice(Double foilPrice) {
         this.foilPrice = foilPrice;
-    }
-
-    public void setFoilPrice(String foilPrice) {
-        this.foilPrice = foilPrice == null ? 0.0D : Double.parseDouble(foilPrice);
     }
 
     @Override

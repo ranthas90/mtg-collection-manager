@@ -1,6 +1,5 @@
 package org.ranthas.mtgcollectionmanager.service;
 
-import org.ranthas.mtgcollectionmanager.converter.ScryfallConverter;
 import org.ranthas.mtgcollectionmanager.dto.scryfall.ScryfallCard;
 import org.ranthas.mtgcollectionmanager.dto.scryfall.ScryfallSet;
 import org.ranthas.mtgcollectionmanager.dto.scryfall.ScryfallSymbol;
@@ -23,7 +22,6 @@ public class MaintenanceService {
     private final SymbolRepository symbolRepository;
     private final SetRepository setRepository;
     private final CardRepository cardRepository;
-    private final ScryfallConverter scryfallConverter;
     private final ScryfallProvider scryfallProvider;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MaintenanceService.class);
@@ -32,12 +30,11 @@ public class MaintenanceService {
             SymbolRepository symbolRepository,
             SetRepository setRepository,
             CardRepository cardRepository,
-            ScryfallConverter scryfallConverter,
-            ScryfallProvider scryfallProvider) {
+            ScryfallProvider scryfallProvider
+    ) {
         this.symbolRepository = symbolRepository;
         this.setRepository = setRepository;
         this.cardRepository = cardRepository;
-        this.scryfallConverter = scryfallConverter;
         this.scryfallProvider = scryfallProvider;
     }
 
@@ -92,7 +89,7 @@ public class MaintenanceService {
 
             for (ScryfallCard scryfallCard : scryfallCards) {
 
-                Card card = scryfallConverter.convert(scryfallCard);
+                Card card = new Card(scryfallCard, set, cardIndex);
                 card.setMtgSet(set);
                 card.setNumericCollectorNumber(cardIndex);
 
