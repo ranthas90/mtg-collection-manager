@@ -26,14 +26,13 @@ public class ScryfallProvider {
         webClient = WebClient
                 .builder()
                 .baseUrl(SCRYFALL_BASE_URL)
-                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(CODEC_MEMORY_SIZE))
+                .codecs(configure -> configure.defaultCodecs().maxInMemorySize(CODEC_MEMORY_SIZE))
                 .build();
     }
 
     public List<ScryfallSymbol> fetchSymbols() {
 
-        ParameterizedTypeReference<ScryfallList<ScryfallSymbol>> typeReference = new ParameterizedTypeReference<>() {
-        };
+        ParameterizedTypeReference<ScryfallList<ScryfallSymbol>> typeReference = new ParameterizedTypeReference<>() {};
         ScryfallList<ScryfallSymbol> response = fetchData("/symbology", typeReference);
 
         return processScryfallList(response, typeReference);
@@ -41,8 +40,7 @@ public class ScryfallProvider {
 
     public List<ScryfallSet> fetchSets() {
 
-        ParameterizedTypeReference<ScryfallList<ScryfallSet>> typeReference = new ParameterizedTypeReference<>() {
-        };
+        ParameterizedTypeReference<ScryfallList<ScryfallSet>> typeReference = new ParameterizedTypeReference<>() {};
         ScryfallList<ScryfallSet> response = fetchData("/sets", typeReference);
 
         return processScryfallList(response, typeReference);
@@ -50,8 +48,7 @@ public class ScryfallProvider {
 
     public List<ScryfallCard> fetchSetCards(String setCode) {
 
-        ParameterizedTypeReference<ScryfallList<ScryfallCard>> typeReference = new ParameterizedTypeReference<>() {
-        };
+        ParameterizedTypeReference<ScryfallList<ScryfallCard>> typeReference = new ParameterizedTypeReference<>() {};
         Function<UriBuilder, URI> url = uriBuilder -> uriBuilder
                 .path("/cards/search")
                 .queryParam("order", "set")
@@ -60,6 +57,7 @@ public class ScryfallProvider {
                 .build();
 
         ScryfallList<ScryfallCard> response = fetchData(url, typeReference);
+
         return processScryfallList(response, typeReference);
     }
 
@@ -81,8 +79,10 @@ public class ScryfallProvider {
                 .block();
     }
 
-    private <T> List<T> processScryfallList(ScryfallList<T> response,
-            ParameterizedTypeReference<ScryfallList<T>> typeReference) {
+    private <T> List<T> processScryfallList(
+            ScryfallList<T> response,
+            ParameterizedTypeReference<ScryfallList<T>> typeReference
+    ) {
 
         List<T> data = new ArrayList<>(response.getData());
 
