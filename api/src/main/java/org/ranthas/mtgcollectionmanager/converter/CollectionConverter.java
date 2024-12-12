@@ -16,11 +16,6 @@ public class CollectionConverter {
         this.symbolConverter = symbolConverter;
     }
 
-    public SetDto convert(Set set) {
-        return new SetDto(set.getId(), set.getCode(), set.getName(), set.getIconPath(), set.getTotalCards(),
-                set.getOwnedCards(), set.getReleaseDate(), set.getSetType());
-    }
-
     public CardDto convert(Card card) {
 
         List<String> manaCost = symbolConverter.convert(card.getManaCost());

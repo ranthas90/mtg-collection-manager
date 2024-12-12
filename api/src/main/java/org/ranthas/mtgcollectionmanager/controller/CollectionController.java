@@ -30,13 +30,13 @@ public class CollectionController {
         return collectionService
                 .findAllSets()
                 .stream()
-                .map(collectionConverter::convert)
+                .map(SetDto::new)
                 .collect(Collectors.toList());
     }
 
     @GetMapping(Endpoints.SET_BY_ID)
     public SetDto findSetById(@PathVariable UUID id) {
-        return collectionConverter.convert(collectionService.findSetById(id));
+        return new SetDto(collectionService.findSetById(id));
     }
 
     @GetMapping(Endpoints.SET_CARDS)
