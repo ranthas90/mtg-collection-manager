@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.util.List;
 
 @Service
@@ -23,6 +24,7 @@ public class MaintenanceService {
     private final SetRepository setRepository;
     private final CardRepository cardRepository;
     private final ScryfallProvider scryfallProvider;
+    private final FileSaverService fileSaverService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MaintenanceService.class);
 
@@ -30,12 +32,14 @@ public class MaintenanceService {
             SymbolRepository symbolRepository,
             SetRepository setRepository,
             CardRepository cardRepository,
-            ScryfallProvider scryfallProvider
+            ScryfallProvider scryfallProvider,
+            FileSaverService fileSaverService
     ) {
         this.symbolRepository = symbolRepository;
         this.setRepository = setRepository;
         this.cardRepository = cardRepository;
         this.scryfallProvider = scryfallProvider;
+        this.fileSaverService = fileSaverService;
     }
 
     @Transactional
@@ -46,14 +50,20 @@ public class MaintenanceService {
     }
 
     @Transactional
-    public void importScryfallSymbols() {
+    public void importScryfallSymbols() throws IOException {
 
         LOGGER.info("Fetching symbols from Scryfall API...");
         List<ScryfallSymbol> scryfallSymbols = scryfallProvider.fetchSymbols();
 
         for (ScryfallSymbol scryfallSymbol : scryfallSymbols) {
-            LOGGER.info("Saving symbol {}", scryfallSymbol.getSymbol());
-            Symbol symbol = new Symbol(scryfallSymbol);
+            String symbolCode = scryfallSymbol.getSymbol();
+            LOGGER.info("Saving symbol {} image into disk", symbolCode);
+
+            byte[] bytes = scryfallProvider.downloadImage(scryfallSymbol.getSvgPath());
+            String symbolPath = fileSaverService.saveSymbol(scryfallSymbol, bytes);
+
+            LOGGER.info("Saving symbol {} into database", symbolCode);
+            Symbol symbol = new Symbol(symbolCode, symbolPath);
             symbolRepository.save(symbol);
         }
         LOGGER.info("Imported {} symbols into the database", scryfallSymbols.size());

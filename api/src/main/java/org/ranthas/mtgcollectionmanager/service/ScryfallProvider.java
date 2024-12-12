@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +39,10 @@ public class ScryfallProvider {
         ScryfallList<ScryfallSymbol> response = fetchData("/symbology", typeReference);
 
         return processScryfallList(response, typeReference);
+    }
+
+    public byte[] downloadImage(String uri) throws IOException {
+        return webClient.get().uri(URI.create(uri)).retrieve().bodyToMono(byte[].class).block();
     }
 
     public List<ScryfallSet> fetchSets() {

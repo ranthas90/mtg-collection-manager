@@ -29,10 +29,10 @@ public class Symbol {
     public Symbol() {
     }
 
-    public Symbol(ScryfallSymbol scryfallSymbol) {
+    public Symbol(String symbol, String symbolPath) {
         id = null;
-        code = scryfallSymbol.getSymbol();
-        imagePath = scryfallSymbol.getSvgPath();
+        code = symbol;
+        imagePath = symbolPath;
     }
 
     public UUID getId() {
