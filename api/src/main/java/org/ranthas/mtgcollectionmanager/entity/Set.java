@@ -47,13 +47,13 @@ public class Set {
     public Set() {
     }
 
-    public Set(ScryfallSet scryfallSet) {
+    public Set(ScryfallSet scryfallSet, String setPath) {
         id = scryfallSet.getId();
         code = scryfallSet.getCode();
         name = scryfallSet.getName();
         totalCards = scryfallSet.getCardCount();
         ownedCards = 0L;
-        iconPath = scryfallSet.getIconPath();
+        iconPath = setPath;
         releaseDate = LocalDate.parse(scryfallSet.getReleasedAt(), DateTimeConstants.DATE_FORMATTER);
         setType = scryfallSet.getSetType().replace("_", " ");
     }

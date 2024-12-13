@@ -34,7 +34,7 @@ public class SymbolConverter implements Converter<String, List<String>> {
 
         for (String symbolCode : symbolsCodes) {
             Symbol symbol = symbolRepository.findByCode(symbolCode);
-            symbolsUrls.add(symbol.getImagePath());
+            symbolsUrls.add("/assets/symbols/" + symbol.getImagePath());
         }
 
         return symbolsUrls;

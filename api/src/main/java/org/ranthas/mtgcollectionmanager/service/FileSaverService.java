@@ -1,5 +1,6 @@
 package org.ranthas.mtgcollectionmanager.service;
 
+import org.ranthas.mtgcollectionmanager.dto.scryfall.ScryfallSet;
 import org.ranthas.mtgcollectionmanager.dto.scryfall.ScryfallSymbol;
 import org.springframework.stereotype.Service;
 
@@ -14,12 +15,26 @@ public class FileSaverService {
         String svgPath = symbol.getSvgPath();
         int index = svgPath.lastIndexOf("/") + 1;
         String imageName = svgPath.substring(index);
-        String fileName = System.getenv("HOME") + "/Downloads/" + imageName;
+        String fileName = System.getenv("MtgManagerPath") + "/symbols/" + imageName;
 
+        writeToDisk(fileName, image);
+
+        return imageName;
+    }
+
+    public String saveSet(ScryfallSet set, byte[] image) throws IOException {
+
+        String imageName = "_" + set.getCode() + ".svg";
+        String fileName = System.getenv("MtgManagerPath") + "/sets/" + imageName;
+
+        writeToDisk(fileName, image);
+
+        return imageName;
+    }
+
+    private void writeToDisk(String fileName, byte[] image) throws IOException {
         FileOutputStream fileOutputStream = new FileOutputStream(fileName);
         fileOutputStream.write(image);
         fileOutputStream.close();
-
-        return imageName;
     }
 }

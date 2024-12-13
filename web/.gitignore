@@ -27,3 +27,6 @@ yarn-error.log*
 *.iws
 *.iml
 *.ipr
+
+# Application images
+/public/assets

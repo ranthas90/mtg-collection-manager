@@ -69,7 +69,7 @@ public class MaintenanceService {
         LOGGER.info("Imported {} symbols into the database", scryfallSymbols.size());
     }
 
-    public void importScryfallSets() {
+    public void importScryfallSets() throws IOException {
 
         LOGGER.info("Fetching sets from Scryfall API...");
         List<ScryfallSet> scryfallSets = scryfallProvider
@@ -79,8 +79,13 @@ public class MaintenanceService {
                 .toList();
 
         for (ScryfallSet scryfallSet : scryfallSets) {
-            LOGGER.info("Saving set [{}] :: {}", scryfallSet.getCode(), scryfallSet.getName());
-            Set set = new Set(scryfallSet);
+            LOGGER.info("Saving set [{}] :: {} into disk", scryfallSet.getCode(), scryfallSet.getName());
+
+            byte[] bytes = scryfallProvider.downloadImage(scryfallSet.getIconPath());
+            String setPath = fileSaverService.saveSet(scryfallSet, bytes);
+
+            LOGGER.info("Saving set [{}] :: {} into database", scryfallSet.getCode(), scryfallSet.getName());
+            Set set = new Set(scryfallSet, setPath);
             setRepository.save(set);
         }
         LOGGER.info("Imported {} sets into the database", scryfallSets.size());

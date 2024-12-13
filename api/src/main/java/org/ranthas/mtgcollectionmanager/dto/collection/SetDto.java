@@ -20,7 +20,7 @@ public class SetDto {
         this.id = set.getId();
         this.code = set.getCode();
         this.name = set.getName();
-        this.iconPath = set.getIconPath();
+        this.iconPath = "/assets/sets/" + set.getIconPath();
         this.totalCards = set.getTotalCards();
         this.ownedCards = set.getOwnedCards();
         this.releasedAt = set.getReleaseDate();
