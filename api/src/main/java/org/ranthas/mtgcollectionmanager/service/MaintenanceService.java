@@ -1,5 +1,6 @@
 package org.ranthas.mtgcollectionmanager.service;
 
+import org.ranthas.mtgcollectionmanager.converter.SymbolConverter;
 import org.ranthas.mtgcollectionmanager.dto.scryfall.ScryfallCard;
 import org.ranthas.mtgcollectionmanager.dto.scryfall.ScryfallSet;
 import org.ranthas.mtgcollectionmanager.dto.scryfall.ScryfallSymbol;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class MaintenanceService {
@@ -25,6 +27,7 @@ public class MaintenanceService {
     private final CardRepository cardRepository;
     private final ScryfallProvider scryfallProvider;
     private final FileSaverService fileSaverService;
+    private final SymbolConverter symbolConverter;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MaintenanceService.class);
 
@@ -33,13 +36,15 @@ public class MaintenanceService {
             SetRepository setRepository,
             CardRepository cardRepository,
             ScryfallProvider scryfallProvider,
-            FileSaverService fileSaverService
+            FileSaverService fileSaverService,
+            SymbolConverter symbolConverter
     ) {
         this.symbolRepository = symbolRepository;
         this.setRepository = setRepository;
         this.cardRepository = cardRepository;
         this.scryfallProvider = scryfallProvider;
         this.fileSaverService = fileSaverService;
+        this.symbolConverter = symbolConverter;
     }
 
     @Transactional
@@ -104,7 +109,8 @@ public class MaintenanceService {
 
             for (ScryfallCard scryfallCard : scryfallCards) {
 
-                Card card = new Card(scryfallCard, set, cardIndex);
+                String manaCost = String.join(";", symbolConverter.convert(scryfallCard.getManaCost()));
+                Card card = new Card(scryfallCard, set, cardIndex, manaCost);
                 card.setMtgSet(set);
                 card.setNumericCollectorNumber(cardIndex);
 

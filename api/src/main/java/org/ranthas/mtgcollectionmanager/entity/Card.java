@@ -60,12 +60,12 @@ public class Card {
     public Card() {
     }
 
-    public Card(ScryfallCard scryfallCard, Set set, long cardIndex) {
+    public Card(ScryfallCard scryfallCard, Set set, long cardIndex, String manaCost) {
         id = scryfallCard.getId();
         scryfallUri = scryfallCard.getScryfallUri();
         cardmarketId = scryfallCard.getCardmarketId();
         name = scryfallCard.getName();
-        manaCost = scryfallCard.getManaCost();
+        this.manaCost = manaCost;
         typeLine = scryfallCard.getTypeLine();
         rarity = scryfallCard.getRarity();
         collectorNumber = scryfallCard.getCollectorNumber();

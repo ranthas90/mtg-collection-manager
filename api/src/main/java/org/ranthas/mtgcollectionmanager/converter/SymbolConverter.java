@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class SymbolConverter implements Converter<String, List<String>> {
+public class SymbolConverter implements Converter<String, String> {
 
     private final SymbolRepository symbolRepository;
 
@@ -21,7 +21,7 @@ public class SymbolConverter implements Converter<String, List<String>> {
     }
 
     @Override
-    public List<String> convert(String source) {
+    public String convert(String source) {
 
         if (source == null || source.equals("")) {
             return null;
@@ -37,7 +37,7 @@ public class SymbolConverter implements Converter<String, List<String>> {
             symbolsUrls.add("/assets/symbols/" + symbol.getImagePath());
         }
 
-        return symbolsUrls;
+        return String.join(";", symbolsUrls);
     }
     
 }

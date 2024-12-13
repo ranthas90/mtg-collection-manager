@@ -1,7 +1,6 @@
 package org.ranthas.mtgcollectionmanager.controller;
 
 import org.ranthas.mtgcollectionmanager.constant.Endpoints;
-import org.ranthas.mtgcollectionmanager.converter.CollectionConverter;
 import org.ranthas.mtgcollectionmanager.dto.collection.CardDto;
 import org.ranthas.mtgcollectionmanager.dto.collection.CardQuantity;
 import org.ranthas.mtgcollectionmanager.dto.collection.SetDto;
@@ -18,11 +17,9 @@ import java.util.stream.Collectors;
 public class CollectionController {
 
     private final CollectionService collectionService;
-    private final CollectionConverter collectionConverter;
 
-    public CollectionController(CollectionService collectionService, CollectionConverter collectionConverter) {
+    public CollectionController(CollectionService collectionService) {
         this.collectionService = collectionService;
-        this.collectionConverter = collectionConverter;
     }
 
     @GetMapping(Endpoints.SETS)
@@ -44,7 +41,7 @@ public class CollectionController {
         return collectionService
                 .findSetCards(id)
                 .stream()
-                .map(collectionConverter::convert)
+                .map(CardDto::new)
                 .collect(Collectors.toList());
     }
 
@@ -56,6 +53,6 @@ public class CollectionController {
         card.setFoilQuantity(request.foil());
 
         Card updatedCard = collectionService.saveCard(card);
-        return collectionConverter.convert(updatedCard);
+        return new CardDto(updatedCard);
     }
 }
