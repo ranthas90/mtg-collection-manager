@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import org.ranthas.mtgcollectionmanager.dto.scryfall.ScryfallCard;
 import org.ranthas.mtgcollectionmanager.dto.scryfall.ScryfallCardPrice;
 
-import java.util.UUID;
 import java.util.Objects;
+import java.util.UUID;
 
 @Entity
 @Table(name = "cards")

@@ -1,16 +1,13 @@
 package org.ranthas.mtgcollectionmanager.entity;
 
-import java.util.UUID;
-
-import org.hibernate.annotations.UuidGenerator;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import org.ranthas.mtgcollectionmanager.dto.scryfall.ScryfallSymbol;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.util.Objects;
+import java.util.UUID;
 
 @Entity
 @Table(name = "symbols")
