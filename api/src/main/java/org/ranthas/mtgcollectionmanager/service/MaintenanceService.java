@@ -109,7 +109,9 @@ public class MaintenanceService {
 
             for (ScryfallCard scryfallCard : scryfallCards) {
 
-                String manaCost = String.join(";", symbolConverter.convert(scryfallCard.getManaCost()));
+                List<String> manaCosts = symbolConverter.convert(scryfallCard.getManaCost());
+                String manaCost = String.join(";", manaCosts);
+
                 Card card = new Card(scryfallCard, set, cardIndex, manaCost);
                 card.setMtgSet(set);
                 card.setNumericCollectorNumber(cardIndex);

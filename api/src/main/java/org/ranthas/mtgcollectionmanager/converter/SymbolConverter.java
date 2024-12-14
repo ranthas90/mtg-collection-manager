@@ -6,10 +6,11 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Component
-public class SymbolConverter implements Converter<String, String> {
+public class SymbolConverter implements Converter<String, List<String>> {
 
     private final SymbolRepository symbolRepository;
 
@@ -21,10 +22,10 @@ public class SymbolConverter implements Converter<String, String> {
     }
 
     @Override
-    public String convert(String source) {
+    public List<String> convert(String source) {
 
-        if (source == null || source.equals("")) {
-            return null;
+        if (source == null || source.isEmpty()) {
+            return Collections.emptyList();
         }
 
         source = source.replace(" // ", "");
@@ -34,10 +35,10 @@ public class SymbolConverter implements Converter<String, String> {
 
         for (String symbolCode : symbolsCodes) {
             Symbol symbol = symbolRepository.findByCode(symbolCode);
-            symbolsUrls.add("/assets/symbols/" + symbol.getImagePath());
+            symbolsUrls.add(symbol.getImagePath());
         }
 
-        return String.join(";", symbolsUrls);
+        return symbolsUrls;
     }
     
 }
