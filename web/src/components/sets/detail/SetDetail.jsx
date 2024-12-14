@@ -57,7 +57,7 @@ const SetDetail = () => {
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
           <Card className="sm:col-span-2 flex flex-row items-center">
             <img
-              className="ml-4"
+              className="ml-4 py-4"
               src={set?.iconPath}
               height={128}
               width={128}
