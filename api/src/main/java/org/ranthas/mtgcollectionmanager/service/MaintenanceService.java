@@ -106,6 +106,8 @@ public class MaintenanceService {
             LOGGER.info("Fetching cards from set {}...", set.getName());
             List<ScryfallCard> scryfallCards = scryfallProvider.fetchSetCards(set.getCode());
             long cardIndex = 0L;
+            double collectionPrice = 0.0D;
+            double collectionFoilPrice = 0.0D;
 
             for (ScryfallCard scryfallCard : scryfallCards) {
 
@@ -113,6 +115,8 @@ public class MaintenanceService {
                 String manaCost = String.join(";", manaCosts);
 
                 Card card = new Card(scryfallCard, set, cardIndex, manaCost);
+                collectionPrice = collectionPrice + card.getNonFoilPrice();
+                collectionFoilPrice = collectionFoilPrice + card.getFoilPrice();
                 card.setMtgSet(set);
                 card.setNumericCollectorNumber(cardIndex);
 
@@ -120,6 +124,11 @@ public class MaintenanceService {
                 cardRepository.save(card);
                 cardIndex = cardIndex + 1;
             }
+
+            LOGGER.info("Updating set prices...");
+            set.setPrice(collectionPrice);
+            set.setFoilPrice(collectionFoilPrice);
+            setRepository.save(set);
         }
     }
 }

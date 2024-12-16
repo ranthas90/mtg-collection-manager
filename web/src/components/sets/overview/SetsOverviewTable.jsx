@@ -43,12 +43,12 @@ const SetsOverviewTable = ({ sets }) => {
               <TableCell className="hidden md:table-cell font-medium">
                 {set.releasedAt}
               </TableCell>
-              <TableCell>{set.setType}</TableCell>
+              <TableCell className="capitalize">{set.setType}</TableCell>
               <TableCell className="font-medium">
                 {set.ownedCards} / {set.totalCards}
               </TableCell>
               <TableCell className="font-medium">
-                {formatEuroCurrency(1234111.345)}
+                {formatEuroCurrency(set.collectionPrice)}
               </TableCell>
             </TableRow>
           ))}

@@ -15,16 +15,18 @@ public class SetDto {
     private final long ownedCards;
     private final LocalDate releasedAt;
     private final String setType;
+    private final Double collectionPrice;
 
     public SetDto(Set set) {
-        this.id = set.getId();
-        this.code = set.getCode();
-        this.name = set.getName();
-        this.iconPath = "/assets/sets/" + set.getIconPath();
-        this.totalCards = set.getTotalCards();
-        this.ownedCards = set.getOwnedCards();
-        this.releasedAt = set.getReleaseDate();
-        this.setType = set.getSetType();
+        id = set.getId();
+        code = set.getCode();
+        name = set.getName();
+        iconPath = "/assets/sets/" + set.getIconPath();
+        totalCards = set.getTotalCards();
+        ownedCards = set.getOwnedCards();
+        releasedAt = set.getReleaseDate();
+        setType = set.getSetType();
+        collectionPrice = set.getPrice();
     }
 
     public UUID getId() {
@@ -57,5 +59,9 @@ public class SetDto {
 
     public String getSetType() {
         return setType;
+    }
+
+    public Double getCollectionPrice() {
+        return collectionPrice;
     }
 }
