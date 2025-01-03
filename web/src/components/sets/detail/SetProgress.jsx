@@ -1,11 +1,5 @@
-import {
-  Card,
-  CardHeader,
-  CardDescription,
-  CardTitle,
-  CardFooter,
-} from "../../../shared/components/card/Card";
-import { Progress } from "../../../shared/components/progress/Progress";
+import {Card, CardDescription, CardFooter, CardHeader, CardTitle,} from "../../../shared/components/card/Card";
+import {Progress} from "../../../shared/components/progress/Progress";
 
 const SetProgress = ({ set }) => {
   return (

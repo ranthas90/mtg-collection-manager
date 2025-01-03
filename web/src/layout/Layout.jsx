@@ -1,6 +1,6 @@
-import { Outlet, useLocation } from "react-router-dom";
+import {Outlet, useLocation} from "react-router-dom";
 import AsideNavigationMenu from "./AsideNavigationMenu";
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 
 const Layout = () => {
   const location = useLocation();

@@ -1,18 +1,6 @@
-import {
-  Package2,
-  Home,
-  ShoppingCart,
-  Users2,
-  LineChart,
-  Package,
-  Settings,
-} from "lucide-react";
-import { Link } from "react-router-dom";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "../shared/components/tooltip/Tooltip";
+import {Home, LineChart, Package, Package2, Settings, ShoppingCart, Users2,} from "lucide-react";
+import {Link} from "react-router-dom";
+import {Tooltip, TooltipContent, TooltipTrigger,} from "../shared/components/tooltip/Tooltip";
 
 const AsideNavigationMenu = () => {
   return (

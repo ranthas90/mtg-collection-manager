@@ -1,5 +1,5 @@
-import { Search } from "lucide-react";
-import { Input } from "./Input";
+import {Search} from "lucide-react";
+import {Input} from "./Input";
 
 const SearchInput = ({ onChangeHandler, placeholder = "Search..." }) => {
   return (

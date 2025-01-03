@@ -1,23 +1,17 @@
-import { useParams } from "react-router-dom";
+import {useParams} from "react-router-dom";
 import useAxios from "../../../hooks/useAxios";
-import { useEffect, useRef, useState } from "react";
+import {useEffect, useRef, useState} from "react";
 import BreadcrumbHeader from "../../../shared/components/breadcrumb/BreadcrumbHeader";
 import {
   Card,
-  CardHeader,
-  CardTitle,
+  CardContent,
   CardDescription,
   CardFooter,
-  CardContent,
+  CardHeader,
+  CardTitle,
 } from "../../../shared/components/card/Card";
-import { Button } from "../../../shared/components/button/Button";
-import { Progress } from "../../../shared/components/progress/Progress";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../../../shared/components/tabs/Tabs";
+import {Progress} from "../../../shared/components/progress/Progress";
+import {Tabs, TabsContent, TabsList, TabsTrigger,} from "../../../shared/components/tabs/Tabs";
 import SetCardsTable from "./SetCardsTable";
 import SearchInput from "../../../shared/components/input/SearchInput";
 import SetProgress from "./SetProgress";

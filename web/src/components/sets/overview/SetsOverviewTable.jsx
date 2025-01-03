@@ -1,13 +1,6 @@
-import { Link } from "react-router-dom";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../../shared/components/table/Table";
-import { formatEuroCurrency } from "../../../shared/lib/utils";
+import {Link} from "react-router-dom";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "../../../shared/components/table/Table";
+import {formatEuroCurrency} from "../../../shared/lib/utils";
 
 const SetsOverviewTable = ({ sets }) => {
   return (

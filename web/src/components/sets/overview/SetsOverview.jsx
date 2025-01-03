@@ -1,12 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import {useEffect, useRef, useState} from "react";
 import useAxios from "../../../hooks/useAxios";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "../../../shared/components/tabs/Tabs";
-import { Search } from "lucide-react";
-import { Input } from "../../../shared/components/input/Input";
+import {Tabs, TabsList, TabsTrigger,} from "../../../shared/components/tabs/Tabs";
 import BreadcrumbHeader from "../../../shared/components/breadcrumb/BreadcrumbHeader";
 import SetsOverviewTabsContent from "./SetsOverviewTabsContent";
 import SearchInput from "../../../shared/components/input/SearchInput";

@@ -1,12 +1,6 @@
-import { Link } from "react-router-dom";
+import {Link} from "react-router-dom";
 import MobileSheetNavigationMenu from "../../../layout/MobileSheetNavigationMenu";
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbSeparator,
-} from "./Breadcrumb";
+import {Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator,} from "./Breadcrumb";
 
 const BreadcrumbHeader = ({ items }) => {
   return (

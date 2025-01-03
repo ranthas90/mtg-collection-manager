@@ -1,19 +1,7 @@
-import {
-  Sheet,
-  SheetTrigger,
-  SheetContent,
-} from "../shared/components/sheet/Sheet";
-import { Button } from "../shared/components/button/Button";
-import { Link } from "react-router-dom";
-import {
-  Package2,
-  Home,
-  Package,
-  ShoppingCart,
-  Users2,
-  PanelLeft,
-  LineChart,
-} from "lucide-react";
+import {Sheet, SheetContent, SheetTrigger,} from "../shared/components/sheet/Sheet";
+import {Button} from "../shared/components/button/Button";
+import {Link} from "react-router-dom";
+import {Home, LineChart, Package, Package2, PanelLeft, ShoppingCart, Users2,} from "lucide-react";
 
 const MobileSheetNavigationMenu = () => {
   return (

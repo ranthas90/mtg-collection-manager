@@ -1,11 +1,5 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../../shared/components/card/Card";
-import { TabsContent } from "../../../shared/components/tabs/Tabs";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from "../../../shared/components/card/Card";
+import {TabsContent} from "../../../shared/components/tabs/Tabs";
 import SetsOverviewTable from "./SetsOverviewTable";
 
 const SetsOverviewTabsContent = ({ value, description, sets }) => {
