@@ -10,12 +10,7 @@ import {Button} from "../button/Button"
 import {Input} from "../input/Input"
 import {Separator} from "../separator/Separator"
 import {Sheet, SheetContent} from "../sheet/Sheet"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../tooltip/Tooltip"
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,} from "../tooltip/Tooltip"
 import {useIsMobile} from "../../../hooks/useMobile";
 import {Skeleton} from "../skeleton/Skeleton";
 

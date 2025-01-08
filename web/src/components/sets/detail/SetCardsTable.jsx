@@ -3,12 +3,12 @@ import ManaCost from "../../mana-cost/ManaCost";
 import {capitalize, formatEuroCurrency} from "../../../shared/lib/utils";
 import {Button} from "../../../shared/components/button/Button";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "../../../shared/components/dropdown-menu/DropdownMenu";
 import {MoreHorizontal} from "lucide-react";
 import {Link} from "react-router-dom";

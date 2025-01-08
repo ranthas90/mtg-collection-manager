@@ -1,24 +1,24 @@
-import {Link} from "react-router-dom";
-import MobileSheetNavigationMenu from "../../../layout/MobileSheetNavigationMenu";
 import {Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator,} from "./Breadcrumb";
+import {SidebarTrigger} from "../sidebar/Sidebar";
+import {Separator} from "../separator/Separator";
 
 const BreadcrumbHeader = ({ items }) => {
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-      <MobileSheetNavigationMenu />
-      <Breadcrumb className="hidden md:flex">
+    <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+      <SidebarTrigger className="-ml-1"/>
+      <Separator orientation="vertical" className="mr-2 h-4"/>
+      <Breadcrumb>
         <BreadcrumbList>
-          {items &&
-            items.map((item) => (
-              <>
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <Link to={item.link}>{item.title}</Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-              </>
-            ))}
+          {items && items.map(item => (
+            <>
+              <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbLink href={item.link}>
+                  {item.title}
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="hidden md:block"/>
+            </>
+          ))}
         </BreadcrumbList>
       </Breadcrumb>
     </header>
