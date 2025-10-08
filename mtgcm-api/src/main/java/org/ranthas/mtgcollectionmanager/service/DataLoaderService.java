@@ -25,7 +25,6 @@ public class DataLoaderService {
     private final SetRepository setRepository;
     private final CardRepository cardRepository;
 
-
     public DataLoaderService(
             ScryfallClient scryfallClient,
             ScryfallConverter scryfallConverter,
@@ -79,9 +78,7 @@ public class DataLoaderService {
             long collectionOrder = 0;
 
             for (ScryfallCard card : cards) {
-                MtgCard mtgCard = scryfallConverter.convert(card);
-                mtgCard.setMtgSet(savedMtgSet);
-                mtgCard.setNumericCollectorNumber(collectionOrder);
+                MtgCard mtgCard = scryfallConverter.convert(card, savedMtgSet, collectionOrder);
 
                 cardRepository.save(mtgCard);
                 collectionOrder++;
@@ -92,6 +89,4 @@ public class DataLoaderService {
 
         return new DataLoadResponse(0, (System.currentTimeMillis() - start));
     }
-
-
 }

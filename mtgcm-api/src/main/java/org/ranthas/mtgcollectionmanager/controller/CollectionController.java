@@ -25,6 +25,11 @@ public class CollectionController {
         return collectionService.findAllSets();
     }
 
+    @GetMapping("/collection/sets/{code}")
+    public SetDTO findSetByCode(@PathVariable String code) {
+        return collectionService.findSetByCode(code);
+    }
+
     @GetMapping("/collection/sets/{code}/cards")
     public List<CardDTO> findCardsBySetCode(@PathVariable String code) {
         return collectionService.findSetCardsByCode(code);

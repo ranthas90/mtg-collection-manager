@@ -1,5 +1,6 @@
 package org.ranthas.mtgcollectionmanager.service;
 
+import org.ranthas.mtgcollectionmanager.converter.CollectionConverter;
 import org.ranthas.mtgcollectionmanager.dto.CardDTO;
 import org.ranthas.mtgcollectionmanager.dto.SetDTO;
 import org.ranthas.mtgcollectionmanager.repository.CardRepository;
@@ -14,32 +15,31 @@ public class CollectionService {
 
     private final SetRepository setRepository;
     private final CardRepository cardRepository;
+    private final CollectionConverter collectionConverter;
 
-    public CollectionService(SetRepository setRepository, CardRepository cardRepository) {
+    public CollectionService(
+            SetRepository setRepository,
+            CardRepository cardRepository,
+            CollectionConverter collectionConverter
+    ) {
         this.setRepository = setRepository;
         this.cardRepository = cardRepository;
+        this.collectionConverter = collectionConverter;
     }
 
     public List<SetDTO> findAllSets() {
-        return setRepository
-                .findAll(Sort.by(Sort.Direction.DESC, "releaseDate"))
-                .stream()
-                .map(mtgSet -> new SetDTO(
-                        mtgSet.getCode(),
-                        mtgSet.getName(),
-                        mtgSet.getReleaseDate(),
-                        mtgSet.getSetType(),
-                        mtgSet.getTotalCards(),
-                        0L
-                ))
-                .toList();
+        return setRepository.findAllWithProgress();
+    }
+
+    public SetDTO findSetByCode(String code) {
+        return setRepository.findWithProgressByCode(code);
     }
 
     public List<CardDTO> findSetCardsByCode(String setCode) {
         return cardRepository
                 .findAllBySetCode(setCode)
                 .stream()
-                .map(mtgCard -> new CardDTO(mtgCard.getName()))
+                .map(collectionConverter::convert)
                 .toList();
     }
 }

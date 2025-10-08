@@ -36,11 +36,11 @@ public class MtgCard {
     @Column(name = "numeric_collector_number")
     private Long numericCollectorNumber;
 
-    @Column(name = "non_foil_quantity")
-    private long nonFoilQuantity;
+    @Column(name = "is_owned")
+    private boolean owned;
 
-    @Column(name = "foil_quantity")
-    private long foilQuantity;
+    @Column(name = "is_foil")
+    private boolean foil;
 
     @ManyToOne
     @JoinColumn(name = "set_id")
@@ -49,21 +49,32 @@ public class MtgCard {
     @Column(name = "image")
     private String image;
 
-    @Column(name = "non_foil_price")
-    private Double nonFoilPrice;
+    @Column(name = "normal_price")
+    private Double normalPrice;
 
     @Column(name = "foil_price")
     private Double foilPrice;
+
+    @Column(name = "slug")
+    private String slug;
 
     public MtgCard() {
     }
 
     public UUID getId() {
-        return this.id;
+        return id;
     }
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public Integer getCardmarketId() {
+        return cardmarketId;
+    }
+
+    public void setCardmarketId(Integer cardmarketId) {
+        this.cardmarketId = cardmarketId;
     }
 
     public String getScryfallUri() {
@@ -74,16 +85,8 @@ public class MtgCard {
         this.scryfallUri = scryfallUri;
     }
 
-    public Integer getCardmarketId() {
-        return this.cardmarketId;
-    }
-
-    public void setCardmarketId(Integer cardmarketId) {
-        this.cardmarketId = cardmarketId;
-    }
-
     public String getName() {
-        return this.name;
+        return name;
     }
 
     public void setName(String name) {
@@ -91,7 +94,7 @@ public class MtgCard {
     }
 
     public String getManaCost() {
-        return this.manaCost;
+        return manaCost;
     }
 
     public void setManaCost(String manaCost) {
@@ -99,7 +102,7 @@ public class MtgCard {
     }
 
     public String getTypeLine() {
-        return this.typeLine;
+        return typeLine;
     }
 
     public void setTypeLine(String typeLine) {
@@ -107,7 +110,7 @@ public class MtgCard {
     }
 
     public String getRarity() {
-        return this.rarity;
+        return rarity;
     }
 
     public void setRarity(String rarity) {
@@ -115,7 +118,7 @@ public class MtgCard {
     }
 
     public String getCollectorNumber() {
-        return this.collectorNumber;
+        return collectorNumber;
     }
 
     public void setCollectorNumber(String collectorNumber) {
@@ -123,31 +126,31 @@ public class MtgCard {
     }
 
     public Long getNumericCollectorNumber() {
-        return this.numericCollectorNumber;
+        return numericCollectorNumber;
     }
 
     public void setNumericCollectorNumber(Long numericCollectorNumber) {
         this.numericCollectorNumber = numericCollectorNumber;
     }
 
-    public long getNonFoilQuantity() {
-        return this.nonFoilQuantity;
+    public boolean isOwned() {
+        return owned;
     }
 
-    public void setNonFoilQuantity(long nonFoilQuantity) {
-        this.nonFoilQuantity = nonFoilQuantity;
+    public void setOwned(boolean owned) {
+        this.owned = owned;
     }
 
-    public long getFoilQuantity() {
-        return this.foilQuantity;
+    public boolean isFoil() {
+        return foil;
     }
 
-    public void setFoilQuantity(long foilQuantity) {
-        this.foilQuantity = foilQuantity;
+    public void setFoil(boolean foil) {
+        this.foil = foil;
     }
 
     public MtgSet getMtgSet() {
-        return this.mtgSet;
+        return mtgSet;
     }
 
     public void setMtgSet(MtgSet mtgSet) {
@@ -155,27 +158,27 @@ public class MtgCard {
     }
 
     public String getImage() {
-        return this.image;
+        return image;
     }
 
     public void setImage(String image) {
         this.image = image;
     }
 
-    public Double getNonFoilPrice() {
-        return this.nonFoilPrice;
+    public Double getNormalPrice() {
+        return normalPrice;
     }
 
-    public void setNonFoilPrice(Double nonFoilPrice) {
-        this.nonFoilPrice = nonFoilPrice;
+    public void setNormalPrice(Double normalPrice) {
+        this.normalPrice = normalPrice;
     }
 
-    public void setNonFoilPrice(String nonFoilPrice) {
-        this.nonFoilPrice = nonFoilPrice == null ? 0.0D : Double.parseDouble(nonFoilPrice);
+    public void setNormalPrice(String normalPrice) {
+        this.normalPrice = normalPrice == null ? 0.0D : Double.parseDouble(normalPrice);
     }
 
     public Double getFoilPrice() {
-        return this.foilPrice;
+        return foilPrice;
     }
 
     public void setFoilPrice(Double foilPrice) {
@@ -184,6 +187,14 @@ public class MtgCard {
 
     public void setFoilPrice(String foilPrice) {
         this.foilPrice = foilPrice == null ? 0.0D : Double.parseDouble(foilPrice);
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
     }
 
     @Override

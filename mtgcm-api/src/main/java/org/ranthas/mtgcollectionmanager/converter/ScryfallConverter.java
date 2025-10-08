@@ -35,7 +35,7 @@ public class ScryfallConverter {
         return mtgSet;
     }
 
-    public MtgCard convert(ScryfallCard card) {
+    public MtgCard convert(ScryfallCard card, MtgSet mtgSet, long collectionOrder) {
 
         MtgCard mtgCard = new MtgCard();
         mtgCard.setId(card.getId());
@@ -46,15 +46,26 @@ public class ScryfallConverter {
         mtgCard.setTypeLine(card.getTypeLine());
         mtgCard.setRarity(card.getRarity());
         mtgCard.setCollectorNumber(card.getCollectorNumber());
+        mtgCard.setOwned(false);
+        mtgCard.setFoil(false);
+        mtgCard.setMtgSet(mtgSet);
+        mtgCard.setNumericCollectorNumber(collectionOrder);
 
         if (card.getCardPrices() != null) {
-            mtgCard.setNonFoilPrice(card.getCardPrices().getEur());
+            mtgCard.setNormalPrice(card.getCardPrices().getEur());
             mtgCard.setFoilPrice(card.getCardPrices().getEurFoil());
         }
 
         if (card.getCardImages() != null) {
             mtgCard.setImage(card.getCardImages().getArtCrop());
         }
+
+        String slug = collectionOrder + "-" + card.getName()
+                .toLowerCase()
+                .replace(" ", "-")
+                .replace("'", "");
+
+        mtgCard.setSlug(slug);
 
         return mtgCard;
     }

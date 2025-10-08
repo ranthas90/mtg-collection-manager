@@ -9,23 +9,16 @@ public class SetDTO {
     private final String name;
     private final String releaseDate;
     private final String setType;
+    private final String iconUri;
     private final Long totalCards;
     private final Long ownedCards;
 
-    public SetDTO(String code, String name, String releaseDate, String setType, Long totalCards, Long ownedCards) {
-        this.code = code;
-        this.name = name;
-        this.releaseDate = releaseDate;
-        this.setType = setType;
-        this.totalCards = totalCards;
-        this.ownedCards = ownedCards;
-    }
-
-    public SetDTO(String code, String name, LocalDate releaseDate, String setType, Long totalCards, Long ownedCards) {
+    public SetDTO(String code, String name, LocalDate releaseDate, String setType, String iconUri, Long totalCards, Long ownedCards) {
         this.code = code;
         this.name = name;
         this.releaseDate = releaseDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         this.setType = setType;
+        this.iconUri = iconUri;
         this.totalCards = totalCards;
         this.ownedCards = ownedCards;
     }
@@ -44,6 +37,10 @@ public class SetDTO {
 
     public String getSetType() {
         return setType;
+    }
+
+    public String getIconUri() {
+        return iconUri;
     }
 
     public Long getTotalCards() {
