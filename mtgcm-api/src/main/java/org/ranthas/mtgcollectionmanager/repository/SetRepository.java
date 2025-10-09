@@ -18,7 +18,10 @@ public interface SetRepository extends JpaRepository<MtgSet, UUID> {
     @Query("""
             select new org.ranthas.mtgcollectionmanager.dto.SetDTO(
             set.code,set.name,set.releaseDate,set.setType,set.iconPath as iconUri,set.totalCards,
-            (select count(*) from MtgCard card where card.mtgSet = set and card.owned = true) as ownedCards)
+            (select count(*) from MtgCard card where card.mtgSet = set and card.owned = true) as ownedCards,
+            totalPrice,
+            (select coalesce(sum(coalesce(normalPrice,0.0)),0.0) from MtgCard card where card.mtgSet = set and card.owned = true) as ownedPrice
+            )
             from MtgSet set
             order by set.releaseDate desc
             """
@@ -28,7 +31,10 @@ public interface SetRepository extends JpaRepository<MtgSet, UUID> {
     @Query("""
             select new org.ranthas.mtgcollectionmanager.dto.SetDTO(
             set.code,set.name,set.releaseDate,set.setType,set.iconPath as iconUri,set.totalCards,
-            (select count(*) from MtgCard card where card.mtgSet = set and card.owned = true) as ownedCards)
+            (select count(*) from MtgCard card where card.mtgSet = set and card.owned = true) as ownedCards,
+            totalPrice,
+            (select coalesce(sum(coalesce(normalPrice,0.0)),0.0) from MtgCard card where card.mtgSet = set and card.owned = true) as ownedPrice
+            )
             from MtgSet set
             where set.code = ?1
             order by set.releaseDate desc

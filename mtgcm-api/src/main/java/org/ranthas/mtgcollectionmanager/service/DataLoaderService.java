@@ -76,13 +76,18 @@ public class DataLoaderService {
             MtgSet mtgSet = scryfallConverter.convert(set);
             MtgSet savedMtgSet = setRepository.save(mtgSet);
             long collectionOrder = 0;
+            double collectionPrice = 0.0D;
 
             for (ScryfallCard card : cards) {
                 MtgCard mtgCard = scryfallConverter.convert(card, savedMtgSet, collectionOrder);
 
                 cardRepository.save(mtgCard);
                 collectionOrder++;
+                collectionPrice = collectionPrice + mtgCard.getNormalPrice();
             }
+
+            savedMtgSet.setTotalPrice(collectionPrice);
+            setRepository.save(savedMtgSet);
 
             return new DataLoadResponse(cards.size() + 1, (System.currentTimeMillis() - start));
         }

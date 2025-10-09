@@ -16,4 +16,7 @@ public interface CardRepository extends JpaRepository<MtgCard, UUID> {
 
     @Query("from MtgCard c where c.mtgSet.code = ?1 order by c.numericCollectorNumber")
     List<MtgCard> findAllBySetCode(String setCode);
+
+    @Query("from MtgCard c where c.mtgSet.code = ?1 and c.slug = ?2")
+    MtgCard findBySetCodeAndSlug(String setCode, String slug);
 }

@@ -42,4 +42,8 @@ public class CollectionService {
                 .map(collectionConverter::convert)
                 .toList();
     }
+
+    public CardDTO findCardBySetCodeAndSlug(String setCode, String slug) {
+        return collectionConverter.convert(cardRepository.findBySetCodeAndSlug(setCode, slug));
+    }
 }

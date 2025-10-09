@@ -36,6 +36,9 @@ public class MtgSet {
     @Column(name = "set_type")
     private String setType;
 
+    @Column(name = "total_price")
+    private Double totalPrice;
+
     public MtgSet() {
     }
 
@@ -93,6 +96,14 @@ public class MtgSet {
 
     public void setTotalCards(long totalCards) {
         this.totalCards = totalCards;
+    }
+
+    public Double getTotalPrice() {
+        return totalPrice;
+    }
+
+    public void setTotalPrice(Double totalPrice) {
+        this.totalPrice = totalPrice;
     }
 
     @Override

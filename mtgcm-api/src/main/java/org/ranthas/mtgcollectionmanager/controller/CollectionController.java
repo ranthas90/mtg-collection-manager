@@ -34,4 +34,9 @@ public class CollectionController {
     public List<CardDTO> findCardsBySetCode(@PathVariable String code) {
         return collectionService.findSetCardsByCode(code);
     }
+
+    @GetMapping("/collection/sets/{code}/cards/{slug}")
+    public CardDTO findCardBySetCodeAndSlug(@PathVariable String code, @PathVariable String slug) {
+        return collectionService.findCardBySetCodeAndSlug(code, slug);
+    }
 }
