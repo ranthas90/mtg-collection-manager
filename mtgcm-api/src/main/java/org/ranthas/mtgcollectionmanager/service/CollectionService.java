@@ -5,7 +5,6 @@ import org.ranthas.mtgcollectionmanager.dto.CardDTO;
 import org.ranthas.mtgcollectionmanager.dto.SetDTO;
 import org.ranthas.mtgcollectionmanager.repository.CardRepository;
 import org.ranthas.mtgcollectionmanager.repository.SetRepository;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
