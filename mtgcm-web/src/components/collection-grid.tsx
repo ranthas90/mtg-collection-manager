@@ -23,6 +23,16 @@ export function CollectionGrid() {
 
   useEffect(() => {
     // fetch collection sets from axios
+    const fetchData = async () => {
+      try {
+        const response = await axios.get("/test");
+        const data = response.data;
+        console.log(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchData();
   }, []);
 
   useEffect(() => {
