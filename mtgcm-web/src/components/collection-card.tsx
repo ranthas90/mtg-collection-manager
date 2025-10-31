@@ -2,16 +2,7 @@ import { Badge } from "@/components/ui/badge.tsx";
 import { Card } from "@/components/ui/card.tsx";
 import { Calendar, Layers } from "lucide-react";
 import { Progress } from "@/components/ui/progress.tsx";
-
-interface Collection {
-  id: string;
-  name: string;
-  releaseDate: string;
-  cardCount: number;
-  ownedCards: number;
-  description: string;
-  imageQuery: string;
-}
+import type { Collection } from "@/types/types";
 
 interface CollectionCardProps {
   collection: Collection;

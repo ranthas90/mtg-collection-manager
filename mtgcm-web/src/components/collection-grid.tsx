@@ -3,6 +3,7 @@ import { CollectionCard } from "@/components/collection-card.tsx";
 import { Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input.tsx";
 import { useAxios } from "@/hooks/use-axios.ts";
+import type { Collection } from "@/types/types";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -12,7 +13,7 @@ export function CollectionGrid() {
   const [isLoading, setIsLoading] = useState(false);
   const observerTarget = useRef<HTMLDivElement>(null);
   const axios = useAxios();
-  const [collections, setCollections] = useState([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
 
   const filteredCollections = collections.filter((collection) =>
     collection.name.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -25,9 +26,9 @@ export function CollectionGrid() {
     // fetch collection sets from axios
     const fetchData = async () => {
       try {
-        const response = await axios.get("/test");
+        const response = await axios.get("/collection/sets");
         const data = response.data;
-        console.log(data);
+        setCollections(data);
       } catch (error) {
         console.error(error);
       }
