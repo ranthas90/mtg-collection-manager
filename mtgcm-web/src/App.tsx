@@ -1,35 +1,22 @@
-import { ThemeToggle } from "./components/theme-toggle";
-import { CollectionGrid } from "./components/collection-grid";
+import "./App.css";
+import { Navigate, Route, Routes } from "react-router";
+import { DashboardPage } from "./app/dashboard/dashboard-page.tsx";
+import { MyCollectionPage } from "./app/my-collection/my-collection-page.tsx";
+import { MtgExpansionsPage } from "./app/mtg-expansions/mtg-expansions-page.tsx";
+import { SettingsPage } from "./app/settings/settings-page.tsx";
+import { Layout } from "./app/layout/layout.tsx";
 
 function App() {
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-balance">MTG Collection</h1>
-            <p className="text-sm text-muted-foreground">
-              Browse Magic: The Gathering card sets
-            </p>
-          </div>
-          <ThemeToggle />
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2 text-balance">
-            Explore Collections
-          </h2>
-          <p className="text-muted-foreground text-pretty leading-relaxed">
-            Discover cards from different Magic: The Gathering sets and
-            expansions throughout the years.
-          </p>
-        </div>
-
-        <CollectionGrid />
-      </main>
-    </div>
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route path="/" element={<Navigate to={"/dashboard"} />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/my-collection" element={<MyCollectionPage />} />
+        <Route path="/mtg-expansions" element={<MtgExpansionsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+      </Route>
+    </Routes>
   );
 }
 
