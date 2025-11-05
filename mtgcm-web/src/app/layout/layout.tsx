@@ -9,7 +9,7 @@ import {
   SidebarMenuItem,
   SidebarTrigger,
 } from "../../components/ui/sidebar.tsx";
-import { Home } from "lucide-react";
+import { GalleryVerticalEnd, Home } from "lucide-react";
 import { Link, Outlet } from "react-router";
 
 const sidebarItems = [
@@ -23,7 +23,23 @@ export function Layout() {
   return (
     <>
       <Sidebar>
-        <SidebarHeader>Este es el header</SidebarHeader>
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild>
+                <Link to={"/"}>
+                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                    <GalleryVerticalEnd className="size-4" />
+                  </div>
+                  <div className="flex flex-col gap-0.5 leading-none">
+                    <span className="font-medium">MTG Collection Manager</span>
+                    <span className="">v1.0.0</span>
+                  </div>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupContent>
