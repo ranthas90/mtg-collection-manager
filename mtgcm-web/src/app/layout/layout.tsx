@@ -16,6 +16,7 @@ const sidebarItems = [
   { title: "Dashboard/Home", href: "/", icon: Home },
   { title: "My Collection", href: "/my-collection", icon: Home },
   { title: "MTG Expansions", href: "/mtg-expansions", icon: Home },
+  { title: "Data sync", href: "/data-sync", icon: Home },
   { title: "Settings", href: "/settings", icon: Home },
 ];
 

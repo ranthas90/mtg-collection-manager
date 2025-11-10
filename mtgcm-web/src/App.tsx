@@ -5,6 +5,7 @@ import { MyCollectionPage } from "./app/my-collection/my-collection-page.tsx";
 import MtgExpansionsPage from "./app/mtg-expansions/mtg-expansions-page.tsx";
 import { SettingsPage } from "./app/settings/settings-page.tsx";
 import { Layout } from "./app/layout/layout.tsx";
+import { DataSyncPage } from "./app/data-sync/data-sync-page.tsx";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/my-collection" element={<MyCollectionPage />} />
         <Route path="/mtg-expansions" element={<MtgExpansionsPage />} />
+        <Route path="/data-sync" element={<DataSyncPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
     </Routes>

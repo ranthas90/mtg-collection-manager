@@ -12,7 +12,30 @@ import {
 } from "../../components/ui/select.tsx";
 import type { MtgExpansion } from "../../types/mtg-types.ts";
 
-const expansionTypes = [{ label: "Expansion", value: "expansion" }];
+const expansionTypes = [
+  { label: "Core", value: "core" },
+  { label: "Expansion", value: "expansion" },
+  { label: "Masters", value: "masters" },
+  { label: "Eternal", value: "eternal" },
+  { label: "Masterpiece", value: "masterpiece" },
+  { label: "Arsenal", value: "arsenal" },
+  { label: "From the vault", value: "from_the_vault" },
+  { label: "Spellbook", value: "spellbook" },
+  { label: "Premium deck", value: "premium_deck" },
+  { label: "Duel deck", value: "duel_deck" },
+  { label: "Draft innovation", value: "draft_innovation" },
+  { label: "Commander", value: "commander" },
+  { label: "Planechase", value: "planechase" },
+  { label: "Archenemy", value: "archenemy" },
+  { label: "Vanguard", value: "vanguard" },
+  { label: "Funny", value: "funny" },
+  { label: "Starter", value: "starter" },
+  { label: "Box", value: "box" },
+  { label: "Promo", value: "promo" },
+  { label: "Token", value: "token" },
+  { label: "Memorabilia", value: "memorabilia" },
+  { label: "Minigame", value: "minigame" },
+];
 
 function MtgExpansionsPage() {
   const axios = useAxios();
