@@ -59,7 +59,7 @@ export function Layout() {
           </SidebarGroup>
         </SidebarContent>
       </Sidebar>
-      <main>
+      <main className="flex-1 min-h-screen flex-col bg-muted/40 w-full">
         <SidebarTrigger />
         <Outlet />
       </main>

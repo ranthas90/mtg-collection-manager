@@ -7,7 +7,7 @@ import { formatCurrency, formatTwoDecimal } from "../../lib/utils.ts";
 export const columns: ColumnDef<MtgExpansion>[] = [
   {
     accessorKey: "name",
-    header: () => <div className="text-right">Name</div>,
+    header: () => <div className="text-left">Name</div>,
     cell: ({ row }) => {
       const data = row.original;
       const icon = data.iconUri;
@@ -15,8 +15,9 @@ export const columns: ColumnDef<MtgExpansion>[] = [
       const type = data.setType;
 
       return (
-        <div>
-          <MtgExpansionIcon image={icon} name={name} /> - {name} - {type} -{" "}
+        <div className="flex flex-row gap-x-5">
+          <MtgExpansionIcon image={icon} name={name} />
+          <h3 className="my-auto">{name}</h3>
           <Badge variant="outline">{type}</Badge>
         </div>
       );
@@ -24,7 +25,7 @@ export const columns: ColumnDef<MtgExpansion>[] = [
   },
   {
     accessorKey: "percentCollected",
-    header: () => <div className="text-right">Percent Collected</div>,
+    header: () => <div className="text-left">Percent Collected</div>,
     cell: ({ row }) => {
       const data = row.original;
       const percentCollected = (data.ownedCards / data.totalCards) * 100;
@@ -33,7 +34,7 @@ export const columns: ColumnDef<MtgExpansion>[] = [
   },
   {
     accessorKey: "setValue",
-    header: () => <div className="text-right">Set value</div>,
+    header: () => <div className="text-left">Set value</div>,
     cell: ({ row }) => {
       const data = row.original;
       return <div>{formatCurrency(data.totalPrice)}</div>;
@@ -41,26 +42,26 @@ export const columns: ColumnDef<MtgExpansion>[] = [
   },
   {
     accessorKey: "collectedValue",
-    header: () => <div className="text-right">Set value</div>,
+    header: () => <div className="text-left">Collected value</div>,
     cell: ({ row }) => {
       const data = row.original;
-      return <div>{formatCurrency(data.totalPrice)}</div>;
+      return <div>{formatCurrency(data.ownedPrice)}</div>;
     },
   },
   {
     accessorKey: "code",
-    header: () => <div className="text-right">Set value</div>,
+    header: () => <div className="text-left">Code</div>,
     cell: ({ row }) => {
       const data = row.original;
-      return <div>{formatCurrency(data.totalPrice)}</div>;
+      return <div className="uppercase">{data.code}</div>;
     },
   },
   {
     accessorKey: "releaseDate",
-    header: () => <div className="text-right">Set value</div>,
+    header: () => <div className="text-left">Release date</div>,
     cell: ({ row }) => {
       const data = row.original;
-      return <div>{formatCurrency(data.totalPrice)}</div>;
+      return <div>{data.releaseDate.toString()}</div>;
     },
   },
 ];

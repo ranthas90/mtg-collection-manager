@@ -2,7 +2,7 @@ import "./App.css";
 import { Navigate, Route, Routes } from "react-router";
 import { DashboardPage } from "./app/dashboard/dashboard-page.tsx";
 import { MyCollectionPage } from "./app/my-collection/my-collection-page.tsx";
-import { MtgExpansionsPage } from "./app/mtg-expansions/mtg-expansions-page.tsx";
+import MtgExpansionsPage from "./app/mtg-expansions/mtg-expansions-page.tsx";
 import { SettingsPage } from "./app/settings/settings-page.tsx";
 import { Layout } from "./app/layout/layout.tsx";
 
