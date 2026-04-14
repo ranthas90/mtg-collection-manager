@@ -98,4 +98,9 @@ public class MtgSet {
     public void setCards(List<MtgCard> cards) {
         this.cards = cards;
     }
+
+    public void addCard(MtgCard card) {
+        this.cards.add(card);
+        card.setMtgSet(this);
+    }
 }

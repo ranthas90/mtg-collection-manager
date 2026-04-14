@@ -4,10 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ScryfallSet {
 
+    private UUID id;
     private String code;
     private String name;
 
@@ -26,6 +28,14 @@ public class ScryfallSet {
     private String iconSvgUri;
 
     public ScryfallSet() {
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
     }
 
     public String getCode() {

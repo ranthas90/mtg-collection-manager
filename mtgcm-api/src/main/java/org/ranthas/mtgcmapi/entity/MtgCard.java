@@ -35,7 +35,7 @@ public class MtgCard {
 
     private boolean collected;
 
-    @Column(name = "oracle_text")
+    @Column(name = "oracle_text", length = 1000)
     private String oracleText;
 
     private String artist;
@@ -103,6 +103,10 @@ public class MtgCard {
 
     public void setSortNumber(Long sortNumber) {
         this.sortNumber = sortNumber;
+    }
+
+    public void setSortNumber(int sortNumber) {
+        this.sortNumber = (long) sortNumber;
     }
 
     public String getImageUri() {

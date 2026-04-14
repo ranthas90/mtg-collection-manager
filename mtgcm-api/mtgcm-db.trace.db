@@ -1,0 +1,11 @@
+2026-04-14 10:23:45.032762+01:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "MTG_SETS" not found (this database is empty); SQL statement:
+select ms1_0.id,ms1_0.code,ms1_0.icon_uri,ms1_0.name,ms1_0.release_date,ms1_0.total_cards,ms1_0.type,c1_0.mtg_set_id,c1_0.id,c1_0.artist,c1_0.collected,c1_0.collection_number,c1_0.foil_price,c1_0.image_uri,c1_0.mana_cost,c1_0.name,c1_0.oracle_text,c1_0.power,c1_0.rarity,c1_0.regular_price,c1_0.sort_number,c1_0.toughness,c1_0.type from mtg_sets ms1_0 left join mtg_cards c1_0 on ms1_0.id=c1_0.mtg_set_id where ms1_0.id=? [42104-240]
+2026-04-14 10:28:00.468544+01:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLDataException: Valor demasiado largo para la columna "ORACLE_TEXT CHARACTER VARYING(255)": "U&'Whenever a creature deals damage to you, put a gold counter on it.\\000aEach c... (297)"
+Value too long for column "ORACLE_TEXT CHARACTER VARYING(255)": "U&'Whenever a creature deals damage to you, put a gold counter on it.\\000aEach c... (297)"; SQL statement:
+insert into mtg_cards (artist,collected,collection_number,foil_price,image_uri,mana_cost,mtg_set_id,name,oracle_text,power,rarity,regular_price,sort_number,toughness,type,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) [22001-240]
+2026-04-14 10:29:03.487045+01:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLDataException: Valor demasiado largo para la columna "ORACLE_TEXT CHARACTER VARYING(255)": "U&'Whenever a creature deals damage to you, put a gold counter on it.\\000aEach c... (297)"
+Value too long for column "ORACLE_TEXT CHARACTER VARYING(255)": "U&'Whenever a creature deals damage to you, put a gold counter on it.\\000aEach c... (297)"; SQL statement:
+insert into mtg_cards (artist,collected,collection_number,foil_price,image_uri,mana_cost,mtg_set_id,name,oracle_text,power,rarity,regular_price,sort_number,toughness,type,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) [22001-240]

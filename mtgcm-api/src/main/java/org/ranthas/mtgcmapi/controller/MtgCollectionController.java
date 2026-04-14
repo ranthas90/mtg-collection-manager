@@ -1,10 +1,13 @@
 package org.ranthas.mtgcmapi.controller;
 
 import org.ranthas.mtgcmapi.converter.MtgConverter;
+import org.ranthas.mtgcmapi.dto.LoadSetResponse;
 import org.ranthas.mtgcmapi.dto.SetDto;
 import org.ranthas.mtgcmapi.entity.MtgSet;
 import org.ranthas.mtgcmapi.service.MtgCollectionService;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -23,6 +26,12 @@ public class MtgCollectionController {
     @GetMapping("/missing-sets")
     public List<SetDto> findMissingSets() {
         return mtgCollectionService.findMissingSets().stream().map(mtgConverter::convert).toList();
+    }
+
+    @PostMapping("/load-collections")
+    public List<LoadSetResponse> loadCollectionSets(@RequestBody List<String> setCodes) {
+        // TODO: chequear si ya existe; aunque el front pide los sets que faltan, pueden entrar manualmente
+        return mtgCollectionService.loadSets(setCodes);
     }
 
     @GetMapping("/sets")
