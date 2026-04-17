@@ -3,28 +3,34 @@ package org.ranthas.mtgcmapi.service;
 import org.ranthas.mtgcmapi.converter.ScryfallConverter;
 import org.ranthas.mtgcmapi.dto.LoadSetResponse;
 import org.ranthas.mtgcmapi.dto.ScryfallCard;
-import org.ranthas.mtgcmapi.entity.MtgCard;
-import org.ranthas.mtgcmapi.repository.MtgSetRepository;
 import org.ranthas.mtgcmapi.dto.ScryfallSet;
+import org.ranthas.mtgcmapi.dto.UpdateSetCard;
+import org.ranthas.mtgcmapi.entity.MtgCard;
 import org.ranthas.mtgcmapi.entity.MtgSet;
+import org.ranthas.mtgcmapi.repository.MtgCardRepository;
+import org.ranthas.mtgcmapi.repository.MtgSetRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class MtgCollectionService {
 
     private final MtgSetRepository mtgSetRepository;
+    private final MtgCardRepository mtgCardRepository;
     private final ScryfallApiClient scryfallApiClient;
     private final ScryfallConverter scryfallConverter;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MtgCollectionService.class);
 
-    public MtgCollectionService(MtgSetRepository mtgSetRepository, ScryfallApiClient scryfallApiClient, ScryfallConverter scryfallConverter) {
+    public MtgCollectionService(MtgSetRepository mtgSetRepository, MtgCardRepository mtgCardRepository,
+                                ScryfallApiClient scryfallApiClient, ScryfallConverter scryfallConverter) {
         this.mtgSetRepository = mtgSetRepository;
+        this.mtgCardRepository = mtgCardRepository;
         this.scryfallApiClient = scryfallApiClient;
         this.scryfallConverter = scryfallConverter;
     }
@@ -32,14 +38,15 @@ public class MtgCollectionService {
     public List<MtgSet> findMissingSets() {
         List<ScryfallSet> scryfallSets = scryfallApiClient.findAllSets();
         List<String> databaseSets = mtgSetRepository.findAll().stream().map(MtgSet::getCode).toList();
+        List<MtgSet> result = new ArrayList<>();
 
         for (ScryfallSet scryfallSet : scryfallSets) {
             if (!databaseSets.contains(scryfallSet.getCode())) {
-                // TODO: se añade a la respuesta
+                result.add(scryfallConverter.convert(scryfallSet));
             }
         }
 
-        return List.of();
+        return result;
     }
 
     public List<LoadSetResponse> loadSets(List<String> setCodes) {
@@ -75,5 +82,20 @@ public class MtgCollectionService {
         }
 
         return response;
+    }
+
+    public List<MtgSet> findAllSets() {
+        return mtgSetRepository.findAll();
+    }
+
+    public List<MtgCard> findAllSetCards(String setCode) {
+        return mtgCardRepository.findAllBySetCode(setCode);
+    }
+
+    public MtgCard updateSetCard(UUID cardId, UpdateSetCard request) {
+        MtgCard mtgCard = mtgCardRepository.getReferenceById(cardId);
+        mtgCard.setCollected(request.collected());
+
+        return mtgCardRepository.save(mtgCard);
     }
 }

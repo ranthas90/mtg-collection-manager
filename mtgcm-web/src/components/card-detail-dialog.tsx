@@ -1,5 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ManaCost } from "@/components/mana-cost";
+import { OracleText } from "@/components/oracle-text";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +16,7 @@ interface CardDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCollectedChange: (cardId: string, collected: boolean) => void;
+  updatingCardIds: Set<string>;
 }
 
 export function CardDetailDialog({
@@ -21,18 +24,25 @@ export function CardDetailDialog({
   open,
   onOpenChange,
   onCollectedChange,
+  updatingCardIds,
 }: CardDetailDialogProps) {
   if (!card) return null;
 
+  const regularPrice = card.regularPrice ?? card.price ?? null;
+  const foilPrice = card.foilPrice ?? null;
+
+  const formatPrice = (price: number | null) =>
+    price === null ? "N/A" : `$${price.toFixed(2)}`;
+
   const getRarityColor = (rarity: Card["rarity"]) => {
     switch (rarity) {
-      case "Mythic Rare":
+      case "mythic":
         return "bg-orange-100 text-orange-700 border-orange-300";
-      case "Rare":
+      case "rare":
         return "bg-amber-100 text-amber-700 border-amber-300";
-      case "Uncommon":
+      case "uncommon":
         return "bg-slate-200 text-slate-700 border-slate-300";
-      case "Common":
+      case "common":
         return "bg-gray-100 text-gray-600 border-gray-300";
       default:
         return "";
@@ -41,31 +51,33 @@ export function CardDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 overflow-hidden">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] p-0 overflow-hidden sm:w-[calc(100vw-4rem)] sm:max-w-[980px]">
         <DialogHeader className="p-4 pb-0">
           <DialogTitle className="text-lg">{card.name}</DialogTitle>
         </DialogHeader>
-        <div className="flex gap-4 p-4">
+        <div className="flex max-h-[85vh] flex-col gap-4 overflow-y-auto p-4 md:flex-row">
           {/* Card Image */}
-          <div className="shrink-0">
-            {card.imageUri ? (
+          <div className="shrink-0 self-center md:self-start">
+            {card.imageUriNormal ? (
               <img
-                src={card.imageUri}
+                src={card.imageUriNormal}
                 alt={card.name}
-                className="w-56 rounded-lg shadow-md"
+                className="w-48 rounded-lg shadow-md sm:w-56"
               />
             ) : (
-              <div className="w-56 h-80 bg-muted rounded-lg flex items-center justify-center">
+              <div className="flex h-80 w-48 items-center justify-center rounded-lg bg-muted sm:w-56">
                 <span className="text-xs text-muted-foreground">No image</span>
               </div>
             )}
           </div>
 
           {/* Card Details */}
-          <div className="flex flex-1 flex-col gap-3">
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
             {/* Type and Rarity */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-muted-foreground">{card.type}</span>
+              <span className="break-words text-sm text-muted-foreground">
+                {card.type}
+              </span>
               <Badge
                 variant="outline"
                 className={cn("text-xs", getRarityColor(card.rarity))}
@@ -80,7 +92,11 @@ export function CardDetailDialog({
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   Mana Cost
                 </span>
-                <span className="text-sm font-mono">{card.manaCost}</span>
+                <ManaCost
+                  manaCost={card.manaCost}
+                  className="text-sm"
+                  iconClassName="size-5"
+                />
               </div>
             )}
 
@@ -90,9 +106,7 @@ export function CardDetailDialog({
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   Card Text
                 </span>
-                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                  {card.oracleText}
-                </p>
+                <OracleText text={card.oracleText} />
               </div>
             )}
 
@@ -110,44 +124,55 @@ export function CardDetailDialog({
 
             {/* Set Info */}
             {card.setName && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   Set
                 </span>
-                <span className="text-sm">
+                <span className="break-words text-sm">
                   {card.setName} ({card.setCode?.toUpperCase()}) #
-                  {String(card.sortNumber).padStart(3, "0")}
+                  {card.collectionNumber.padStart(3, "0")}
                 </span>
               </div>
             )}
 
             {/* Artist */}
             {card.artist && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   Artist
                 </span>
-                <span className="text-sm">{card.artist}</span>
+                <span className="break-words text-sm">{card.artist}</span>
               </div>
             )}
 
-            {/* Price */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Price
-              </span>
-              <span className="text-sm font-semibold text-primary">
-                ${card.price.toFixed(2)}
-              </span>
+            {/* Prices */}
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Regular
+                </span>
+                <span className="text-sm font-semibold text-primary">
+                  {formatPrice(regularPrice)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Foil
+                </span>
+                <span className="text-sm font-semibold text-primary">
+                  {formatPrice(foilPrice)}
+                </span>
+              </div>
             </div>
 
             {/* Collected Status */}
-            <div className="mt-auto flex items-center gap-2 pt-2 border-t border-border">
+            <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-border pt-2">
               <Checkbox
                 id="collected-status"
                 checked={card.collected}
+                disabled={updatingCardIds.has(card.id)}
                 onCheckedChange={(checked) =>
-                  onCollectedChange(card.id, checked as boolean)
+                  void onCollectedChange(card.id, checked as boolean)
                 }
               />
               <label

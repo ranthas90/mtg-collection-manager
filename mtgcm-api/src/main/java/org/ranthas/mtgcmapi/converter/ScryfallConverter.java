@@ -34,7 +34,8 @@ public class ScryfallConverter {
         mtgCard.setRarity(scryfallCard.getRarity());
         mtgCard.setManaCost(scryfallCard.getManaCost());
         mtgCard.setCollectionNumber(scryfallCard.getCollectionNumber());
-        mtgCard.setImageUri(scryfallCard.getImages().getNormal());
+        mtgCard.setImageUriNormal(scryfallCard.getImages().getNormal());
+        mtgCard.setImageUriArtCrop(scryfallCard.getImages().getArtCrop());
         mtgCard.setRegularPrice(scryfallCard.getPrices().getEur());
         mtgCard.setFoilPrice(scryfallCard.getPrices().getEurFoil());
         mtgCard.setOracleText(scryfallCard.getOracleText());

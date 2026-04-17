@@ -24,8 +24,11 @@ public class MtgCard {
     @Column(name = "sort_number")
     private Long sortNumber;
 
-    @Column(name = "image_uri")
-    private String imageUri;
+    @Column(name = "image_uri_normal")
+    private String imageUriNormal;
+
+    @Column(name = "image_uri_art_crop")
+    private String imageUriArtCrop;
 
     @Column(name = "regular_price")
     private Double regularPrice;
@@ -109,12 +112,20 @@ public class MtgCard {
         this.sortNumber = (long) sortNumber;
     }
 
-    public String getImageUri() {
-        return imageUri;
+    public String getImageUriNormal() {
+        return imageUriNormal;
     }
 
-    public void setImageUri(String imageUri) {
-        this.imageUri = imageUri;
+    public void setImageUriNormal(String imageUriNormal) {
+        this.imageUriNormal = imageUriNormal;
+    }
+
+    public String getImageUriArtCrop() {
+        return imageUriArtCrop;
+    }
+
+    public void setImageUriArtCrop(String imageUriArtCrop) {
+        this.imageUriArtCrop = imageUriArtCrop;
     }
 
     public Double getRegularPrice() {

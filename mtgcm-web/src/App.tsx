@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { SetsPanel } from "@/components/sets-panel";
 import { SetDetailPanel } from "@/components/set-detail-panel";
 import { ScanSetsDialog } from "@/components/scan-sets-dialog";
 import { CardDetailDialog } from "@/components/card-detail-dialog";
+import { Toaster } from "@/components/ui/sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,12 +14,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { CardSet, Card } from "@/lib/data";
-import { mockSets, mockCards } from "@/lib/data";
+import {
+  fetchSetCards,
+  fetchSets,
+  loadCollections,
+  updateCardCollected,
+} from "@/lib/api";
 
 function App() {
   const [selectedSet, setSelectedSet] = useState<CardSet | null>(null);
   const [sets, setSets] = useState<CardSet[]>([]);
-  const [cards, setCards] = useState<Record<string, Card[]>>(mockCards);
+  const [cards, setCards] = useState<Record<string, Card[]>>({});
+  const [loadedSetIds, setLoadedSetIds] = useState<Set<string>>(new Set());
+  const [cardsLoading, setCardsLoading] = useState(false);
+  const [cardsError, setCardsError] = useState("");
+  const [updatingCardIds, setUpdatingCardIds] = useState<Set<string>>(new Set());
   const [scanDialogOpen, setScanDialogOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [cardDetailOpen, setCardDetailOpen] = useState(false);
@@ -27,9 +39,19 @@ function App() {
   const [rarityFilter, setRarityFilter] = useState("all");
   const [ownedFilter, setOwnedFilter] = useState("all");
 
+  const {
+    data: fetchedSets,
+    isLoading: setsLoading,
+    isError: setsError,
+    error: setsQueryError,
+    refetch: refetchSets,
+  } = useQuery({
+    queryKey: ["sets"],
+    queryFn: fetchSets,
+  });
+
   const handleSetSelect = (set: CardSet) => {
     setSelectedSet(set);
-    // todo: fetchear cartas del set desde el back y añadirlas al estado
 
     // Reset card filters when selecting a new set
     setCardNameFilter("");
@@ -37,31 +59,51 @@ function App() {
     setOwnedFilter("all");
   };
 
-  const handleCardCollectedChange = (cardId: string, collected: boolean) => {
+  const handleCardCollectedChange = async (cardId: string, collected: boolean) => {
     if (!selectedSet) return;
+    if (updatingCardIds.has(cardId)) return;
 
     const setId = selectedSet.id;
-    const updatedCards = cards[setId].map((card) =>
-        card.id === cardId ? { ...card, collected } : card,
-    );
+    setUpdatingCardIds((prev) => new Set(prev).add(cardId));
 
-    setCards((prev) => ({ ...prev, [setId]: updatedCards }));
+    try {
+      const updatedCard = await updateCardCollected(setId, cardId, collected);
 
-    // Update set progress
-    const collectedCount = updatedCards.filter((c) => c.collected).length;
-    setSets((prev) =>
-        prev.map((s) =>
-            s.id === setId ? { ...s, collectedCards: collectedCount } : s,
-        ),
-    );
-    setSelectedSet((prev) =>
-        prev?.id === setId ? { ...prev, collectedCards: collectedCount } : prev,
-    );
+      setCards((prev) => {
+        const currentCards = prev[setId] ?? [];
+        const updatedCards = currentCards.map((card) =>
+          card.id === cardId ? updatedCard : card,
+        );
 
-    // Update selected card if it's the one being changed
-    setSelectedCard((prev) =>
-        prev?.id === cardId ? { ...prev, collected } : prev,
-    );
+        const collectedCount = updatedCards.filter((card) => card.collected).length;
+
+        setSets((currentSets) =>
+          currentSets.map((set) =>
+            set.id === setId ? { ...set, collectedCards: collectedCount } : set,
+          ),
+        );
+        setSelectedSet((currentSelectedSet) =>
+          currentSelectedSet?.id === setId
+            ? { ...currentSelectedSet, collectedCards: collectedCount }
+            : currentSelectedSet,
+        );
+
+        return { ...prev, [setId]: updatedCards };
+      });
+
+      setSelectedCard((prev) => (prev?.id === cardId ? updatedCard : prev));
+    } catch (error) {
+      toast.error("Failed to update collected status.", {
+        description:
+          error instanceof Error ? error.message : "The backend rejected the card update.",
+      });
+    } finally {
+      setUpdatingCardIds((prev) => {
+        const next = new Set(prev);
+        next.delete(cardId);
+        return next;
+      });
+    }
   };
 
   const handleCardClick = (card: Card) => {
@@ -69,34 +111,145 @@ function App() {
     setCardDetailOpen(true);
   };
 
-  const handleImportSets = (newSets: CardSet[]) => {
-    // Add new sets to the collection (sorted by release date, newest first)
-    setSets((prev) => {
-      const combined = [...prev, ...newSets];
-      return combined.sort(
-          (a, b) =>
-              new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime(),
-      );
-    });
+  const handleImportSets = async (newSets: CardSet[]) => {
+    const setIds = newSets.map((set) => set.id);
+    const results = await loadCollections(setIds);
+    const successfulImports = results.filter((result) => result.success);
+    const failedImports = results.filter((result) => !result.success);
 
-    // Initialize empty card arrays for new sets
+    await refetchSets();
+
     setCards((prev) => {
       const updated = { ...prev };
-      for (const set of newSets) {
-        updated[set.id] = [];
+      for (const result of successfulImports) {
+        updated[result.setCode] = updated[result.setCode] ?? [];
       }
       return updated;
+    });
+
+    setLoadedSetIds((prev) => {
+      const next = new Set(prev);
+      for (const result of successfulImports) {
+        next.delete(result.setCode);
+      }
+      return next;
+    });
+
+    if (successfulImports.length > 0 && failedImports.length === 0) {
+      toast.success(
+        `Imported ${successfulImports.length} set${successfulImports.length === 1 ? "" : "s"}.`,
+        {
+          description: successfulImports
+            .map((result) => `${result.setCode} (${result.timeTaken} ms)`)
+            .join(", "),
+        },
+      );
+      return;
+    }
+
+    if (successfulImports.length > 0) {
+      toast.warning(
+        `Imported ${successfulImports.length} set${successfulImports.length === 1 ? "" : "s"}, ${failedImports.length} failed.`,
+        {
+          description: [
+            successfulImports.length > 0
+              ? `Success: ${successfulImports.map((result) => result.setCode).join(", ")}`
+              : "",
+            failedImports.length > 0
+              ? `Failed: ${failedImports.map((result) => result.setCode).join(", ")}`
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" | "),
+        },
+      );
+      return;
+    }
+
+    toast.error("No sets were imported.", {
+      description:
+        failedImports.length > 0
+          ? `Failed: ${failedImports.map((result) => result.setCode).join(", ")}`
+          : "The backend did not import any selected sets.",
     });
   };
 
   useEffect(() => {
-    /*
-    invoke("fetch_collection")
-        .then((data) => setSets(data as CardSet[]))
-        .catch((e) => console.error(e));
+    if (!fetchedSets) {
+      return;
+    }
 
-     */
-  }, []);
+    setSets((prev) => {
+      const importedOnly = prev.filter(
+        (existingSet) => !fetchedSets.some((fetchedSet) => fetchedSet.id === existingSet.id),
+      );
+      const combined = [...fetchedSets, ...importedOnly];
+
+      return combined.sort(
+        (a, b) =>
+          new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime(),
+      );
+    });
+  }, [fetchedSets]);
+
+  useEffect(() => {
+    if (!selectedSet) {
+      return;
+    }
+
+    const updatedSelectedSet = sets.find((set) => set.id === selectedSet.id) ?? null;
+    setSelectedSet(updatedSelectedSet);
+  }, [selectedSet, sets]);
+
+  useEffect(() => {
+    if (!selectedSet) {
+      setCardsLoading(false);
+      setCardsError("");
+      return;
+    }
+
+    if (loadedSetIds.has(selectedSet.id)) {
+      setCardsLoading(false);
+      setCardsError("");
+      return;
+    }
+
+    let ignore = false;
+
+    const loadCards = async () => {
+      setCardsLoading(true);
+      setCardsError("");
+
+      try {
+        const fetchedCards = await fetchSetCards(selectedSet.id);
+
+        if (ignore) {
+          return;
+        }
+
+        setCards((prev) => ({ ...prev, [selectedSet.id]: fetchedCards }));
+        setLoadedSetIds((prev) => new Set(prev).add(selectedSet.id));
+      } catch (error) {
+        if (ignore) {
+          return;
+        }
+
+        setCardsError(
+          error instanceof Error ? error.message : "Failed to fetch set cards",
+        );
+      } finally {
+        if (!ignore) {
+          setCardsLoading(false);
+        }
+      }
+    };
+
+    void loadCards();
+
+    return () => {
+      ignore = true;
+    };
+  }, [loadedSetIds, selectedSet]);
 
   return (
       <div className="flex h-screen flex-col bg-background">
@@ -156,7 +309,10 @@ function App() {
           <SetDetailPanel
               selectedSet={selectedSet}
               cards={selectedSet ? cards[selectedSet.id] : []}
+              cardsLoading={cardsLoading}
+              cardsError={cardsError}
               onCardCollectedChange={handleCardCollectedChange}
+              updatingCardIds={updatingCardIds}
               cardNameFilter={cardNameFilter}
               onCardNameFilterChange={setCardNameFilter}
               rarityFilter={rarityFilter}
@@ -170,7 +326,11 @@ function App() {
         {/* Status Bar */}
         <footer className="flex h-6 items-center justify-between border-t border-border bg-secondary px-3">
         <span className="text-[10px] text-muted-foreground">
-          {sets.length} sets loaded
+          {setsLoading
+              ? "Loading sets..."
+              : setsError
+                ? `Failed to load sets: ${setsQueryError instanceof Error ? setsQueryError.message : "Unknown error"}`
+                : `${sets.length} sets loaded`}
         </span>
           <span className="text-[10px] text-muted-foreground">
           {selectedSet
@@ -183,7 +343,6 @@ function App() {
         <ScanSetsDialog
             open={scanDialogOpen}
             onOpenChange={setScanDialogOpen}
-            existingSets={sets}
             onImportSets={handleImportSets}
         />
 
@@ -193,7 +352,9 @@ function App() {
             open={cardDetailOpen}
             onOpenChange={setCardDetailOpen}
             onCollectedChange={handleCardCollectedChange}
+            updatingCardIds={updatingCardIds}
         />
+        <Toaster />
       </div>
   );
 }

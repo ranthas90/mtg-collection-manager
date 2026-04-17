@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Spinner } from "@/components/ui/spinner";
-import { fetchScryfallSets, findMissingSets } from "@/lib/scryfall";
+import { fetchMissingSets } from "@/lib/api";
 import type { CardSet } from "@/lib/data";
 
 type ScanState = "idle" | "scanning" | "results" | "importing" | "error";
@@ -27,14 +27,12 @@ type ScanState = "idle" | "scanning" | "results" | "importing" | "error";
 interface ScanSetsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  existingSets: CardSet[];
-  onImportSets: (sets: CardSet[]) => void;
+  onImportSets: (sets: CardSet[]) => Promise<void>;
 }
 
 export function ScanSetsDialog({
   open,
   onOpenChange,
-  existingSets,
   onImportSets,
 }: ScanSetsDialogProps) {
   const [scanState, setScanState] = useState<ScanState>("idle");
@@ -48,8 +46,7 @@ export function ScanSetsDialog({
     setSelectedSetIds(new Set());
 
     try {
-      const scryfallSets = await fetchScryfallSets();
-      const missing = findMissingSets(scryfallSets, existingSets);
+      const missing = await fetchMissingSets();
       setMissingSets(missing);
       setScanState("results");
     } catch (error) {
@@ -80,10 +77,19 @@ export function ScanSetsDialog({
     }
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     const setsToImport = missingSets.filter((s) => selectedSetIds.has(s.id));
-    onImportSets(setsToImport);
-    handleClose();
+    setScanState("importing");
+
+    try {
+      await onImportSets(setsToImport);
+      handleClose();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to import sets",
+      );
+      setScanState("error");
+    }
   };
 
   const handleClose = () => {
@@ -96,20 +102,21 @@ export function ScanSetsDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="flex max-h-[85vh] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col p-4 sm:w-[calc(100vw-4rem)] sm:max-w-[960px]">
         <DialogHeader>
           <DialogTitle>Scan for New Sets</DialogTitle>
           <DialogDescription>
             {scanState === "idle" &&
-              "Scan the Scryfall database to find sets not in your collection."}
-            {scanState === "scanning" && "Fetching sets from Scryfall..."}
+              "Fetch missing sets from the local backend and import them into your collection."}
+            {scanState === "scanning" && "Fetching missing sets from the backend..."}
+            {scanState === "importing" && "Importing selected sets into the backend..."}
             {scanState === "results" &&
               `Found ${missingSets.length} sets not in your collection.`}
             {scanState === "error" && "An error occurred while scanning."}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="min-h-[300px]">
+        <div className="min-h-[300px] min-w-0 flex-1 overflow-y-auto">
           {scanState === "idle" && (
             <div className="flex h-[300px] flex-col items-center justify-center gap-4 text-muted-foreground">
               <p className="text-sm">
@@ -123,7 +130,16 @@ export function ScanSetsDialog({
             <div className="flex h-[300px] flex-col items-center justify-center gap-4">
               <Spinner className="size-8" />
               <p className="text-sm text-muted-foreground">
-                Scanning Scryfall database...
+                Fetching missing sets...
+              </p>
+            </div>
+          )}
+
+          {scanState === "importing" && (
+            <div className="flex h-[300px] flex-col items-center justify-center gap-4">
+              <Spinner className="size-8" />
+              <p className="text-sm text-muted-foreground">
+                Importing selected sets...
               </p>
             </div>
           )}
@@ -147,64 +163,66 @@ export function ScanSetsDialog({
                 </div>
               ) : (
                 <ScrollArea className="h-[400px] rounded border border-border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="w-10">
-                          <Checkbox
-                            checked={
-                              selectedSetIds.size === missingSets.length &&
-                              missingSets.length > 0
-                            }
-                            onCheckedChange={handleToggleAll}
-                            aria-label="Select all sets"
-                          />
-                        </TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead className="w-28">Type</TableHead>
-                        <TableHead className="w-28">Release Date</TableHead>
-                        <TableHead className="w-20 text-right">Cards</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {missingSets.map((set) => (
-                        <TableRow
-                          key={set.id}
-                          className="cursor-pointer hover:bg-muted/30"
-                          onClick={() => handleToggleSet(set.id)}
-                        >
-                          <TableCell>
+                  <div className="min-w-0 overflow-x-auto">
+                    <Table className="min-w-[720px]">
+                      <TableHeader>
+                        <TableRow className="bg-muted/50">
+                          <TableHead className="w-10">
                             <Checkbox
-                              checked={selectedSetIds.has(set.id)}
-                              onCheckedChange={() => handleToggleSet(set.id)}
-                              onClick={(e) => e.stopPropagation()}
-                              aria-label={`Select ${set.name}`}
+                              checked={
+                                selectedSetIds.size === missingSets.length &&
+                                missingSets.length > 0
+                              }
+                              onCheckedChange={handleToggleAll}
+                              aria-label="Select all sets"
                             />
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {set.name}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {set.type}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {set.releaseDate}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {set.totalCards}
-                          </TableCell>
+                          </TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead className="w-28">Type</TableHead>
+                          <TableHead className="w-28">Release Date</TableHead>
+                          <TableHead className="w-20 text-right">Cards</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {missingSets.map((set) => (
+                          <TableRow
+                            key={set.id}
+                            className="cursor-pointer hover:bg-muted/30"
+                            onClick={() => handleToggleSet(set.id)}
+                          >
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedSetIds.has(set.id)}
+                                onCheckedChange={() => handleToggleSet(set.id)}
+                                onClick={(e) => e.stopPropagation()}
+                                aria-label={`Select ${set.name}`}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {set.name}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {set.type}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {set.releaseDate}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {set.totalCards}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </ScrollArea>
               )}
             </>
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <div className="mr-auto text-xs text-muted-foreground">
+        <DialogFooter className="items-start gap-2 sm:flex-wrap sm:items-center sm:gap-2">
+          <div className="min-w-0 text-xs text-muted-foreground sm:mr-auto">
             {scanState === "results" &&
               missingSets.length > 0 &&
               `${selectedSetIds.size} of ${missingSets.length} selected`}
@@ -213,7 +231,7 @@ export function ScanSetsDialog({
             Cancel
           </Button>
           {scanState === "results" && missingSets.length > 0 && (
-            <Button onClick={handleImport} disabled={selectedSetIds.size === 0}>
+            <Button onClick={() => void handleImport()} disabled={selectedSetIds.size === 0}>
               Import Selected ({selectedSetIds.size})
             </Button>
           )}

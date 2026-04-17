@@ -103,4 +103,8 @@ public class MtgSet {
         this.cards.add(card);
         card.setMtgSet(this);
     }
+
+    public Long getCollectedCards() {
+        return cards.stream().filter(MtgCard::isCollected).count();
+    }
 }

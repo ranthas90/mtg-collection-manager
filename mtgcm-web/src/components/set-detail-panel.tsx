@@ -17,6 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Spinner } from "@/components/ui/spinner";
+import { ManaCost } from "@/components/mana-cost";
 import type { Card, CardSet } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Layers, Search } from "lucide-react";
@@ -24,7 +26,10 @@ import { Layers, Search } from "lucide-react";
 interface SetDetailPanelProps {
   selectedSet: CardSet | null;
   cards: Card[];
+  cardsLoading: boolean;
+  cardsError: string;
   onCardCollectedChange: (cardId: string, collected: boolean) => void;
+  updatingCardIds: Set<string>;
   cardNameFilter: string;
   onCardNameFilterChange: (value: string) => void;
   rarityFilter: string;
@@ -36,8 +41,11 @@ interface SetDetailPanelProps {
 
 export function SetDetailPanel({
   selectedSet,
-  cards,
+  cards = [],
+  cardsLoading,
+  cardsError,
   onCardCollectedChange,
+  updatingCardIds,
   cardNameFilter,
   onCardNameFilterChange,
   rarityFilter,
@@ -71,18 +79,27 @@ export function SetDetailPanel({
 
   const getRarityColor = (rarity: Card["rarity"]) => {
     switch (rarity) {
-      case "Mythic Rare":
+      case "mythic":
         return "bg-orange-100 text-orange-700 border-orange-300";
-      case "Rare":
+      case "rare":
         return "bg-amber-100 text-amber-700 border-amber-300";
-      case "Uncommon":
+      case "uncommon":
         return "bg-slate-200 text-slate-700 border-slate-300";
-      case "Common":
+      case "common":
         return "bg-gray-100 text-gray-600 border-gray-300";
       default:
         return "";
     }
   };
+
+  const getRegularPrice = (card: Card) => card.regularPrice ?? card.price ?? null;
+
+  const getFoilPrice = (card: Card) => card.foilPrice ?? null;
+
+  const formatPrice = (price: number | null) =>
+    price === null ? "N/A" : `€${price.toFixed(2)}`;
+
+  const getDisplayValue = (card: Card) => getRegularPrice(card) ?? getFoilPrice(card) ?? 0;
 
   // Filter cards
   const filteredCards = cards.filter((card) => {
@@ -98,10 +115,10 @@ export function SetDetailPanel({
     return matchesName && matchesRarity && matchesOwned;
   });
 
-  const totalValue = cards.reduce((sum, card) => sum + card.price, 0);
+  const totalValue = cards.reduce((sum, card) => sum + getDisplayValue(card), 0);
   const collectedValue = cards
     .filter((c) => c.collected)
-    .reduce((sum, card) => sum + card.price, 0);
+    .reduce((sum, card) => sum + getDisplayValue(card), 0);
 
   return (
     <div className="flex flex-1 flex-col bg-background">
@@ -206,13 +223,13 @@ export function SetDetailPanel({
               <SelectItem value="all" className="text-xs">
                 All Rarities
               </SelectItem>
-              <SelectItem value="Common" className="text-xs">
+              <SelectItem value="common" className="text-xs">
                 Common
               </SelectItem>
-              <SelectItem value="Uncommon" className="text-xs">
+              <SelectItem value="uncommon" className="text-xs">
                 Uncommon
               </SelectItem>
-              <SelectItem value="Rare" className="text-xs">
+              <SelectItem value="rare" className="text-xs">
                 Rare
               </SelectItem>
               <SelectItem value="Mythic Rare" className="text-xs">
@@ -243,126 +260,151 @@ export function SetDetailPanel({
 
       {/* Cards Table */}
       <div className="flex-1 overflow-auto">
-        <Table>
-          <TableHeader className="sticky top-0 bg-card">
-            <TableRow className="hover:bg-transparent border-border">
-              <TableHead className="h-8 w-10 text-[11px] font-medium text-muted-foreground">
-                #
-              </TableHead>
-              <TableHead className="h-8 w-14 text-[11px] font-medium text-muted-foreground">
-                Image
-              </TableHead>
-              <TableHead className="h-8 text-[11px] font-medium text-muted-foreground">
-                Name
-              </TableHead>
-              <TableHead className="h-8 text-[11px] font-medium text-muted-foreground">
-                Type
-              </TableHead>
-              <TableHead className="h-8 text-[11px] font-medium text-muted-foreground">
-                Rarity
-              </TableHead>
-              <TableHead className="h-8 text-[11px] font-medium text-muted-foreground">
-                Mana
-              </TableHead>
-              <TableHead className="h-8 text-[11px] font-medium text-muted-foreground text-right">
-                Price
-              </TableHead>
-              <TableHead className="h-8 w-16 text-[11px] font-medium text-muted-foreground text-center">
-                Owned
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCards.map((card) => (
-              <TableRow
-                key={card.id}
-                onClick={() => onCardClick(card)}
-                className={cn(
-                  "border-border cursor-pointer",
-                  card.collected
-                    ? "bg-primary/5 hover:bg-primary/10"
-                    : "hover:bg-secondary",
-                )}
-              >
-                <TableCell className="py-1.5 text-xs text-muted-foreground font-mono">
-                  {String(card.sortNumber).padStart(3, "0")}
-                </TableCell>
-                <TableCell className="py-1.5">
-                  {card.imageUri ? (
-                    <img
-                      src={card.imageUri}
-                      alt=""
-                      className="w-10 h-14 object-cover rounded shadow-sm"
-                    />
-                  ) : (
-                    <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
-                      <span className="text-[8px] text-muted-foreground">
-                        N/A
-                      </span>
-                    </div>
+        {cardsLoading ? (
+          <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-3">
+            <Spinner className="size-6" />
+            <p className="text-xs text-muted-foreground">Loading set cards...</p>
+          </div>
+        ) : cardsError ? (
+          <div className="flex h-full min-h-[240px] items-center justify-center px-6">
+            <p className="text-center text-xs text-destructive">{cardsError}</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader className="sticky top-0 bg-card">
+              <TableRow className="hover:bg-transparent border-border">
+                <TableHead className="h-8 w-10 text-[11px] font-medium text-muted-foreground">
+                  #
+                </TableHead>
+                <TableHead className="h-8 w-14 text-[11px] font-medium text-muted-foreground">
+                  Image
+                </TableHead>
+                <TableHead className="h-8 text-[11px] font-medium text-muted-foreground">
+                  Name
+                </TableHead>
+                <TableHead className="h-8 text-[11px] font-medium text-muted-foreground">
+                  Type
+                </TableHead>
+                <TableHead className="h-8 text-[11px] font-medium text-muted-foreground">
+                  Rarity
+                </TableHead>
+                <TableHead className="h-8 text-[11px] font-medium text-muted-foreground">
+                  Mana
+                </TableHead>
+                <TableHead className="h-8 text-[11px] font-medium text-muted-foreground text-right">
+                  Regular Price
+                </TableHead>
+                <TableHead className="h-8 text-[11px] font-medium text-muted-foreground text-right">
+                  Foil Price
+                </TableHead>
+                <TableHead className="h-8 w-16 text-[11px] font-medium text-muted-foreground text-center">
+                  Owned
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredCards.map((card) => (
+                <TableRow
+                  key={card.id}
+                  onClick={() => onCardClick(card)}
+                  className={cn(
+                    "border-border cursor-pointer",
+                    card.collected
+                      ? "bg-primary/5 hover:bg-primary/10"
+                      : "hover:bg-secondary",
                   )}
-                </TableCell>
-                <TableCell className="py-1.5">
-                  <span
-                    className={cn(
-                      "text-xs font-medium",
-                      card.collected
-                        ? "text-foreground"
-                        : "text-muted-foreground",
+                >
+                  <TableCell className="py-1.5 text-xs text-muted-foreground font-mono">
+                    {card.collectionNumber.padStart(3, "0")}
+                  </TableCell>
+                  <TableCell className="py-1.5">
+                    {card.imageUriArtCrop ? (
+                      <div className="flex h-10 w-16 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-muted/40 shadow-sm">
+                        <img
+                          src={card.imageUriArtCrop}
+                          alt=""
+                          className="h-full w-full object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-10 w-16 items-center justify-center rounded-md bg-muted">
+                        <span className="text-[8px] text-muted-foreground">
+                          N/A
+                        </span>
+                      </div>
                     )}
-                  >
-                    {card.name}
-                  </span>
+                  </TableCell>
+                  <TableCell className="py-1.5">
+                    <span
+                      className={cn(
+                        "text-xs font-medium",
+                        card.collected
+                          ? "text-foreground"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {card.name}
+                    </span>
+                  </TableCell>
+                  <TableCell className="py-1.5">
+                    <span className="text-xs text-muted-foreground">
+                      {card.type}
+                    </span>
+                  </TableCell>
+                  <TableCell className="py-1.5">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-[10px] px-1.5 py-0",
+                        getRarityColor(card.rarity),
+                      )}
+                    >
+                      {card.rarity}
+                    </Badge>
                 </TableCell>
                 <TableCell className="py-1.5">
-                  <span className="text-xs text-muted-foreground">
-                    {card.type}
-                  </span>
-                </TableCell>
-                <TableCell className="py-1.5">
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-[10px] px-1.5 py-0",
-                      getRarityColor(card.rarity),
-                    )}
-                  >
-                    {card.rarity}
-                  </Badge>
-                </TableCell>
-                <TableCell className="py-1.5">
-                  <span className="text-xs font-mono text-muted-foreground">
-                    {card.manaCost || "—"}
-                  </span>
-                </TableCell>
-                <TableCell className="py-1.5 text-right">
-                  <span className="text-xs font-medium text-foreground">
-                    ${card.price.toFixed(2)}
-                  </span>
-                </TableCell>
-                <TableCell className="py-1.5 text-center">
-                  <Checkbox
-                    checked={card.collected}
-                    onCheckedChange={(checked) => {
-                      onCardCollectedChange(card.id, checked as boolean);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
+                  <ManaCost
+                    manaCost={card.manaCost}
+                    className="text-xs text-muted-foreground"
+                    iconClassName="size-4"
                   />
                 </TableCell>
-              </TableRow>
-            ))}
-            {filteredCards.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="py-8 text-center text-xs text-muted-foreground"
-                >
-                  No cards match the current filters
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+                  <TableCell className="py-1.5 text-right">
+                    <span className="text-xs font-medium text-foreground">
+                      {formatPrice(getRegularPrice(card))}
+                    </span>
+                  </TableCell>
+                  <TableCell className="py-1.5 text-right">
+                    <span className="text-xs font-medium text-foreground">
+                      {formatPrice(getFoilPrice(card))}
+                    </span>
+                  </TableCell>
+                  <TableCell className="py-1.5 text-center">
+                    <Checkbox
+                      checked={card.collected}
+                      disabled={updatingCardIds.has(card.id)}
+                      onCheckedChange={(checked) => {
+                        void onCardCollectedChange(card.id, checked as boolean);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredCards.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={9}
+                    className="py-8 text-center text-xs text-muted-foreground"
+                  >
+                    No cards match the current filters
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
   );
