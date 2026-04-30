@@ -107,4 +107,17 @@ public class MtgSet {
     public Long getCollectedCards() {
         return cards.stream().filter(MtgCard::isCollected).count();
     }
+
+    @Override
+    public String toString() {
+        return "MtgSet{" +
+                "id=" + id +
+                ", code='" + code + '\'' +
+                ", name='" + name + '\'' +
+                ", type='" + type + '\'' +
+                ", releaseDate=" + releaseDate +
+                ", totalCards=" + totalCards +
+                ", iconUri='" + iconUri + '\'' +
+                '}';
+    }
 }
