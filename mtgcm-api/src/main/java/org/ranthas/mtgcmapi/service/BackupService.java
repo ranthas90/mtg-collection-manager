@@ -2,6 +2,7 @@ package org.ranthas.mtgcmapi.service;
 
 import org.ranthas.mtgcmapi.dto.LoadSetResponse;
 import org.ranthas.mtgcmapi.entity.MtgSet;
+import org.ranthas.mtgcmapi.exception.model.ImportCollectionException;
 import org.ranthas.mtgcmapi.repository.MtgSetRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +20,6 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -113,8 +113,7 @@ public class BackupService {
         List<LoadSetResponse> result = new ArrayList<>();
 
         if (!isZipFile(collectionFile)) {
-            LOGGER.error("Imported collection file must be a ZIP file");
-            return result;
+            throw new ImportCollectionException("Imported collection file must be a ZIP file");
         }
 
         try {
@@ -147,7 +146,7 @@ public class BackupService {
 
         } catch (IOException e) {
             LOGGER.error("Error importing database collection file!", e);
-            return result;
+            throw new ImportCollectionException("I/O error importing database collection file", e);
         } finally {
             LOGGER.info("Cleaning temporal files");
             new File("temp.json").delete();

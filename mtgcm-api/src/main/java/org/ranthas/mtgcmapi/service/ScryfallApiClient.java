@@ -1,5 +1,6 @@
 package org.ranthas.mtgcmapi.service;
 
+import org.ranthas.mtgcmapi.configuration.ScryfallProperties;
 import org.ranthas.mtgcmapi.dto.ScryfallCard;
 import org.ranthas.mtgcmapi.dto.ScryfallList;
 import org.ranthas.mtgcmapi.dto.ScryfallSet;
@@ -18,23 +19,26 @@ import java.util.List;
 @Service
 public class ScryfallApiClient {
 
+    private final ScryfallProperties properties;
     private final WebClient webClient;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ScryfallApiClient.class);
 
-    public ScryfallApiClient() {
+    public ScryfallApiClient(ScryfallProperties properties) {
+        this.properties = properties;
         this.webClient = WebClient.builder()
-                .baseUrl("https://api.scryfall.com")
+                .baseUrl(properties.getBaseUrl())
                 .codecs(clientCodecConfigurer -> clientCodecConfigurer.defaultCodecs().maxInMemorySize(-1))
                 .defaultHeaders(httpHeaders -> {
-                    httpHeaders.add(HttpHeaders.USER_AGENT, "mtgcm-api/1.0");
-                    httpHeaders.add(HttpHeaders.ACCEPT, "application/json;q=0.9,*/*;q=0.8");
+                    httpHeaders.add(HttpHeaders.USER_AGENT, properties.getUserAgentHeader());
+                    httpHeaders.add(HttpHeaders.ACCEPT, properties.getAcceptHeader());
                 })
                 .build();
     }
 
     public List<ScryfallSet> findAllSets() {
         try {
-            ScryfallList<ScryfallSet> setsResponse = sendRequest("/sets", new ParameterizedTypeReference<>() {});
+            ScryfallList<ScryfallSet> setsResponse = sendRequest(properties.getSetsUri(), new ParameterizedTypeReference<>() {});
             return setsResponse.getData().stream().filter(ScryfallSet::isValid).toList();
         } catch (WebClientException e) {
             LOGGER.error("Error finding all sets from Scryfall", e);
@@ -44,7 +48,7 @@ public class ScryfallApiClient {
 
     public ScryfallSet findSetByCode(String code) {
         try {
-            return sendRequest(String.format("/sets/%s", code), ScryfallSet.class);
+            return sendRequest(properties.getSetCodeByUri(code), ScryfallSet.class);
         } catch (WebClientException e) {
             LOGGER.error("Error finding set {} from Scryfall", code, e);
             return null;
@@ -53,9 +57,7 @@ public class ScryfallApiClient {
 
     public List<ScryfallCard> findSetCards(String setCode) {
         try {
-
-            String initialUri = String.format("https://api.scryfall.com/cards/search?include_extras=true&include_variations=true&order=set&q=e:%s&unique=prints", setCode);
-            ScryfallList<ScryfallCard> cardsResponse = sendRequest(initialUri, new ParameterizedTypeReference<>() {});
+            ScryfallList<ScryfallCard> cardsResponse = sendRequest(properties.getSetCardsUri(setCode), new ParameterizedTypeReference<>() {});
             List<ScryfallCard> cards = new ArrayList<>(cardsResponse.getData());
 
             while(cardsResponse.getHasMore()) {
