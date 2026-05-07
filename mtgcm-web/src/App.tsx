@@ -1,10 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { SetsPanel } from "@/components/sets-panel";
-import { SetDetailPanel } from "@/components/set-detail-panel";
+import {
+  SetDetailPanel,
+  type CardSortDirection,
+  type CardSortKey,
+} from "@/components/set-detail-panel";
 import { ScanSetsDialog } from "@/components/scan-sets-dialog";
 import { CardDetailDialog } from "@/components/card-detail-dialog";
+import { CollectionDashboardDialog } from "@/components/collection-dashboard-dialog";
 import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import { Toaster } from "@/components/ui/sonner";
@@ -26,6 +31,8 @@ import {
   type DownloadProgress,
   type LoadCollectionsResult,
 } from "@/lib/api";
+
+type ActivePane = "sets" | "cards";
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) {
@@ -84,6 +91,7 @@ function showImportResults(results: LoadCollectionsResult[]) {
 
 function App() {
   const [selectedSet, setSelectedSet] = useState<CardSet | null>(null);
+  const [activePane, setActivePane] = useState<ActivePane>("sets");
   const [sets, setSets] = useState<CardSet[]>([]);
   const [cards, setCards] = useState<Record<string, Card[]>>({});
   const [loadedSetIds, setLoadedSetIds] = useState<Set<string>>(new Set());
@@ -91,6 +99,7 @@ function App() {
   const [cardsError, setCardsError] = useState("");
   const [updatingCardIds, setUpdatingCardIds] = useState<Set<string>>(new Set());
   const [scanDialogOpen, setScanDialogOpen] = useState(false);
+  const [dashboardOpen, setDashboardOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [cardDetailOpen, setCardDetailOpen] = useState(false);
   const [exportDownloading, setExportDownloading] = useState(false);
@@ -108,6 +117,10 @@ function App() {
   const [cardNameFilter, setCardNameFilter] = useState("");
   const [rarityFilter, setRarityFilter] = useState("all");
   const [ownedFilter, setOwnedFilter] = useState("all");
+  const [cardSortKey, setCardSortKey] = useState<CardSortKey>(null);
+  const [cardSortDirection, setCardSortDirection] =
+    useState<CardSortDirection>("asc");
+  const [focusedCardId, setFocusedCardId] = useState<string | null>(null);
 
   const {
     data: fetchedSets,
@@ -120,16 +133,20 @@ function App() {
     queryFn: fetchSets,
   });
 
-  const handleSetSelect = (set: CardSet) => {
+  const handleSetSelect = useCallback((set: CardSet) => {
     setSelectedSet(set);
+    setActivePane("cards");
+    setFocusedCardId(null);
 
     // Reset card filters when selecting a new set
     setCardNameFilter("");
     setRarityFilter("all");
     setOwnedFilter("all");
-  };
+    setCardSortKey(null);
+    setCardSortDirection("asc");
+  }, []);
 
-  const handleCardCollectedChange = async (cardId: string, collected: boolean) => {
+  const handleCardCollectedChange = useCallback(async (cardId: string, collected: boolean) => {
     if (!selectedSet) return;
     if (updatingCardIds.has(cardId)) return;
 
@@ -174,12 +191,14 @@ function App() {
         return next;
       });
     }
-  };
+  }, [selectedSet, updatingCardIds]);
 
-  const handleCardClick = (card: Card) => {
+  const handleCardClick = useCallback((card: Card) => {
+    setActivePane("cards");
+    setFocusedCardId(card.id);
     setSelectedCard(card);
     setCardDetailOpen(true);
-  };
+  }, []);
 
   const handleImportSets = async (newSets: CardSet[]) => {
     const setIds = newSets.map((set) => set.id);
@@ -284,6 +303,156 @@ function App() {
     }
   };
 
+  const filteredSets = useMemo(
+    () =>
+      sets.filter((set) =>
+        set.name.toLowerCase().includes(setSearchQuery.toLowerCase()),
+      ),
+    [sets, setSearchQuery],
+  );
+
+  const selectedSetCards = useMemo(
+    () => (selectedSet ? (cards[selectedSet.id] ?? []) : []),
+    [cards, selectedSet],
+  );
+  const filteredCards = useMemo(
+    () => {
+      const visibleCards = selectedSetCards.filter((card) => {
+        const matchesName = card.name
+          .toLowerCase()
+          .includes(cardNameFilter.toLowerCase());
+        const matchesRarity =
+          rarityFilter === "all" || card.rarity === rarityFilter;
+        const matchesOwned =
+          ownedFilter === "all" ||
+          (ownedFilter === "owned" && card.collected) ||
+          (ownedFilter === "missing" && !card.collected);
+
+        return matchesName && matchesRarity && matchesOwned;
+      });
+
+      if (!cardSortKey) {
+        return visibleCards;
+      }
+
+      const getRegularPrice = (card: Card) => card.regularPrice ?? card.price ?? null;
+      const getFoilPrice = (card: Card) => card.foilPrice ?? null;
+      const directionMultiplier = cardSortDirection === "asc" ? 1 : -1;
+
+      return [...visibleCards].sort((a, b) => {
+        if (cardSortKey === "name") {
+          return a.name.localeCompare(b.name) * directionMultiplier;
+        }
+
+        const aPrice =
+          cardSortKey === "regularPrice" ? getRegularPrice(a) : getFoilPrice(a);
+        const bPrice =
+          cardSortKey === "regularPrice" ? getRegularPrice(b) : getFoilPrice(b);
+
+        if (aPrice === null && bPrice === null) {
+          return a.name.localeCompare(b.name);
+        }
+
+        if (aPrice === null) {
+          return 1;
+        }
+
+        if (bPrice === null) {
+          return -1;
+        }
+
+        return (aPrice - bPrice) * directionMultiplier;
+      });
+    },
+    [
+      cardNameFilter,
+      cardSortDirection,
+      cardSortKey,
+      ownedFilter,
+      rarityFilter,
+      selectedSetCards,
+    ],
+  );
+
+  const handleCardSortChange = useCallback((sortKey: Exclude<CardSortKey, null>) => {
+    setCardSortKey((currentSortKey) => {
+      if (currentSortKey === sortKey) {
+        setCardSortDirection((currentDirection) =>
+          currentDirection === "asc" ? "desc" : "asc",
+        );
+        return currentSortKey;
+      }
+
+      setCardSortDirection("asc");
+      return sortKey;
+    });
+  }, []);
+
+  const selectSetByOffset = useCallback((offset: number) => {
+    if (filteredSets.length === 0) {
+      return;
+    }
+
+    const currentIndex = selectedSet
+      ? filteredSets.findIndex((set) => set.id === selectedSet.id)
+      : -1;
+    const fallbackIndex = offset > 0 ? -1 : filteredSets.length;
+    const nextIndex =
+      (currentIndex === -1 ? fallbackIndex : currentIndex) + offset;
+    const boundedIndex = Math.min(
+      Math.max(nextIndex, 0),
+      filteredSets.length - 1,
+    );
+
+    setActivePane("sets");
+    handleSetSelect(filteredSets[boundedIndex]);
+    setActivePane("sets");
+  }, [filteredSets, handleSetSelect, selectedSet]);
+
+  const focusCardByOffset = useCallback((offset: number) => {
+    if (filteredCards.length === 0) {
+      return;
+    }
+
+    const currentIndex = focusedCardId
+      ? filteredCards.findIndex((card) => card.id === focusedCardId)
+      : -1;
+    const fallbackIndex = offset > 0 ? -1 : filteredCards.length;
+    const nextIndex =
+      (currentIndex === -1 ? fallbackIndex : currentIndex) + offset;
+    const boundedIndex = Math.min(
+      Math.max(nextIndex, 0),
+      filteredCards.length - 1,
+    );
+
+    setActivePane("cards");
+    setFocusedCardId(filteredCards[boundedIndex].id);
+  }, [filteredCards, focusedCardId]);
+
+  const getFocusedCard = useCallback(() => {
+    if (filteredCards.length === 0) {
+      return null;
+    }
+
+    return (
+      filteredCards.find((card) => card.id === focusedCardId) ??
+      filteredCards[0] ??
+      null
+    );
+  }, [filteredCards, focusedCardId]);
+
+  const isEditableTarget = (target: EventTarget | null) => {
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+
+    return Boolean(
+      target.closest(
+        "input, textarea, select, button, [contenteditable='true'], [role='combobox'], [role='menu'], [role='dialog']",
+      ),
+    );
+  };
+
   useEffect(() => {
     if (!fetchedSets) {
       return;
@@ -310,6 +479,14 @@ function App() {
     const updatedSelectedSet = sets.find((set) => set.id === selectedSet.id) ?? null;
     setSelectedSet(updatedSelectedSet);
   }, [selectedSet, sets]);
+
+  useEffect(() => {
+    if (focusedCardId && filteredCards.some((card) => card.id === focusedCardId)) {
+      return;
+    }
+
+    setFocusedCardId(filteredCards[0]?.id ?? null);
+  }, [filteredCards, focusedCardId]);
 
   useEffect(() => {
     if (!selectedSet) {
@@ -378,6 +555,106 @@ function App() {
     };
   }, [blockingInteraction]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        blockingInteraction ||
+        scanDialogOpen ||
+        dashboardOpen ||
+        cardDetailOpen ||
+        isEditableTarget(event.target)
+      ) {
+        return;
+      }
+
+      if (event.key === "ArrowLeft" || event.key.toLowerCase() === "h") {
+        event.preventDefault();
+        setActivePane("sets");
+        return;
+      }
+
+      if (event.key === "ArrowRight" || event.key.toLowerCase() === "l") {
+        if (selectedSet) {
+          event.preventDefault();
+          setActivePane("cards");
+          setFocusedCardId((currentCardId) => {
+            if (
+              currentCardId &&
+              filteredCards.some((card) => card.id === currentCardId)
+            ) {
+              return currentCardId;
+            }
+
+            return filteredCards[0]?.id ?? null;
+          });
+        }
+
+        return;
+      }
+
+      if (
+        event.key === "ArrowUp" ||
+        event.key === "ArrowDown" ||
+        event.key.toLowerCase() === "k" ||
+        event.key.toLowerCase() === "j"
+      ) {
+        event.preventDefault();
+        const offset =
+          event.key === "ArrowDown" || event.key.toLowerCase() === "j" ? 1 : -1;
+
+        if (activePane === "sets") {
+          selectSetByOffset(offset);
+        } else {
+          focusCardByOffset(offset);
+        }
+
+        return;
+      }
+
+      if (event.key === "Enter" && activePane === "cards") {
+        const focusedCard = getFocusedCard();
+
+        if (focusedCard) {
+          event.preventDefault();
+          handleCardClick(focusedCard);
+        }
+
+        return;
+      }
+
+      if (event.key === " " && activePane === "cards") {
+        const focusedCard = getFocusedCard();
+
+        if (focusedCard && !updatingCardIds.has(focusedCard.id)) {
+          event.preventDefault();
+          void handleCardCollectedChange(focusedCard.id, !focusedCard.collected);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [
+    activePane,
+    blockingInteraction,
+    cardDetailOpen,
+    dashboardOpen,
+    focusCardByOffset,
+    filteredCards,
+    filteredSets,
+    focusedCardId,
+    getFocusedCard,
+    handleCardCollectedChange,
+    handleCardClick,
+    scanDialogOpen,
+    selectedSet,
+    selectSetByOffset,
+    updatingCardIds,
+  ]);
+
   return (
       <div className="flex h-screen flex-col bg-background">
         {/* Title Bar */}
@@ -422,9 +699,16 @@ function App() {
             <span className="px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground rounded-sm cursor-default">
             Edit
           </span>
-            <span className="px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground rounded-sm cursor-default">
-            View
-          </span>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground rounded-sm focus:outline-none">
+                View
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-[200px]">
+                <DropdownMenuItem onClick={() => setDashboardOpen(true)}>
+                  Collection Dashboard
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <span className="px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground rounded-sm cursor-default">
             Help
           </span>
@@ -437,6 +721,7 @@ function App() {
           <SetsPanel
               sets={sets}
               selectedSet={selectedSet}
+              active={activePane === "sets"}
               onSetSelect={handleSetSelect}
               searchQuery={setSearchQuery}
               onSearchChange={setSetSearchQuery}
@@ -448,6 +733,8 @@ function App() {
               cards={selectedSet ? cards[selectedSet.id] : []}
               cardsLoading={cardsLoading}
               cardsError={cardsError}
+              active={activePane === "cards"}
+              focusedCardId={focusedCardId}
               onCardCollectedChange={handleCardCollectedChange}
               updatingCardIds={updatingCardIds}
               cardNameFilter={cardNameFilter}
@@ -456,6 +743,9 @@ function App() {
               onRarityFilterChange={setRarityFilter}
               ownedFilter={ownedFilter}
               onOwnedFilterChange={setOwnedFilter}
+              sortKey={cardSortKey}
+              sortDirection={cardSortDirection}
+              onSortChange={handleCardSortChange}
               onCardClick={handleCardClick}
           />
         </main>
@@ -490,6 +780,11 @@ function App() {
             onOpenChange={setCardDetailOpen}
             onCollectedChange={handleCardCollectedChange}
             updatingCardIds={updatingCardIds}
+        />
+        <CollectionDashboardDialog
+          open={dashboardOpen}
+          onOpenChange={setDashboardOpen}
+          sets={sets}
         />
         <input
           ref={importFileInputRef}

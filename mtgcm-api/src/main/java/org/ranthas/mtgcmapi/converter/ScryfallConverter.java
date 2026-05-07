@@ -34,14 +34,17 @@ public class ScryfallConverter {
         mtgCard.setRarity(scryfallCard.getRarity());
         mtgCard.setManaCost(scryfallCard.getManaCost());
         mtgCard.setCollectionNumber(scryfallCard.getCollectionNumber());
-        mtgCard.setImageUriNormal(scryfallCard.getImages().getNormal());
-        mtgCard.setImageUriArtCrop(scryfallCard.getImages().getArtCrop());
         mtgCard.setRegularPrice(scryfallCard.getPrices().getEur());
         mtgCard.setFoilPrice(scryfallCard.getPrices().getEurFoil());
         mtgCard.setOracleText(scryfallCard.getOracleText());
         mtgCard.setArtist(scryfallCard.getArtist());
         mtgCard.setPower(scryfallCard.getPower());
         mtgCard.setToughness(scryfallCard.getToughness());
+
+        if (scryfallCard.getImages() != null) {
+            mtgCard.setImageUriNormal(scryfallCard.getImages().getNormal());
+            mtgCard.setImageUriArtCrop(scryfallCard.getImages().getArtCrop());
+        }
 
         return mtgCard;
     }

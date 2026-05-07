@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
@@ -21,6 +22,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { fetchMissingSets } from "@/lib/api";
 import type { CardSet } from "@/lib/data";
+import { Search } from "lucide-react";
 
 type ScanState = "idle" | "scanning" | "results" | "importing" | "error";
 
@@ -38,12 +40,21 @@ export function ScanSetsDialog({
   const [scanState, setScanState] = useState<ScanState>("idle");
   const [missingSets, setMissingSets] = useState<CardSet[]>([]);
   const [selectedSetIds, setSelectedSetIds] = useState<Set<string>>(new Set());
+  const [setNameFilter, setSetNameFilter] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+  const filteredSets = missingSets.filter((set) =>
+    set.name.toLowerCase().includes(setNameFilter.toLowerCase()),
+  );
+  const allVisibleSelected =
+    filteredSets.length > 0 &&
+    filteredSets.every((set) => selectedSetIds.has(set.id));
 
   const handleScan = async () => {
     setScanState("scanning");
     setErrorMessage("");
     setSelectedSetIds(new Set());
+    setSetNameFilter("");
 
     try {
       const missing = await fetchMissingSets();
@@ -70,11 +81,21 @@ export function ScanSetsDialog({
   };
 
   const handleToggleAll = () => {
-    if (selectedSetIds.size === missingSets.length) {
-      setSelectedSetIds(new Set());
-    } else {
-      setSelectedSetIds(new Set(missingSets.map((s) => s.id)));
-    }
+    setSelectedSetIds((prev) => {
+      const next = new Set(prev);
+
+      if (allVisibleSelected) {
+        for (const set of filteredSets) {
+          next.delete(set.id);
+        }
+      } else {
+        for (const set of filteredSets) {
+          next.add(set.id);
+        }
+      }
+
+      return next;
+    });
   };
 
   const handleImport = async () => {
@@ -96,6 +117,7 @@ export function ScanSetsDialog({
     setScanState("idle");
     setMissingSets([]);
     setSelectedSetIds(new Set());
+    setSetNameFilter("");
     setErrorMessage("");
     onOpenChange(false);
   };
@@ -162,60 +184,80 @@ export function ScanSetsDialog({
                   </p>
                 </div>
               ) : (
-                <ScrollArea className="h-[400px] rounded border border-border">
-                  <div className="min-w-0 overflow-x-auto">
-                    <Table className="min-w-[720px]">
-                      <TableHeader>
-                        <TableRow className="bg-muted/50">
-                          <TableHead className="w-10">
-                            <Checkbox
-                              checked={
-                                selectedSetIds.size === missingSets.length &&
-                                missingSets.length > 0
-                              }
-                              onCheckedChange={handleToggleAll}
-                              aria-label="Select all sets"
-                            />
-                          </TableHead>
-                          <TableHead>Name</TableHead>
-                          <TableHead className="w-28">Type</TableHead>
-                          <TableHead className="w-28">Release Date</TableHead>
-                          <TableHead className="w-20 text-right">Cards</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {missingSets.map((set) => (
-                          <TableRow
-                            key={set.id}
-                            className="cursor-pointer hover:bg-muted/30"
-                            onClick={() => handleToggleSet(set.id)}
-                          >
-                            <TableCell>
-                              <Checkbox
-                                checked={selectedSetIds.has(set.id)}
-                                onCheckedChange={() => handleToggleSet(set.id)}
-                                onClick={(e) => e.stopPropagation()}
-                                aria-label={`Select ${set.name}`}
-                              />
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {set.name}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {set.type}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {set.releaseDate}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {set.totalCards}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                <div className="flex flex-col gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      className="h-8 pl-7 text-xs"
+                      onChange={(event) => setSetNameFilter(event.target.value)}
+                      placeholder="Filter sets by name..."
+                      type="text"
+                      value={setNameFilter}
+                    />
                   </div>
-                </ScrollArea>
+                  <ScrollArea className="h-[400px] rounded border border-border">
+                    <div className="min-w-0 overflow-x-auto">
+                      <Table className="min-w-[720px]">
+                        <TableHeader>
+                          <TableRow className="bg-muted/50">
+                            <TableHead className="w-10">
+                              <Checkbox
+                                checked={allVisibleSelected}
+                                disabled={filteredSets.length === 0}
+                                onCheckedChange={handleToggleAll}
+                                aria-label="Select visible sets"
+                              />
+                            </TableHead>
+                            <TableHead>Name</TableHead>
+                            <TableHead className="w-28">Type</TableHead>
+                            <TableHead className="w-28">Release Date</TableHead>
+                            <TableHead className="w-20 text-right">Cards</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredSets.map((set) => (
+                            <TableRow
+                              key={set.id}
+                              className="cursor-pointer hover:bg-muted/30"
+                              onClick={() => handleToggleSet(set.id)}
+                            >
+                              <TableCell>
+                                <Checkbox
+                                  checked={selectedSetIds.has(set.id)}
+                                  onCheckedChange={() => handleToggleSet(set.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  aria-label={`Select ${set.name}`}
+                                />
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {set.name}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {set.type}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {set.releaseDate}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {set.totalCards}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          {filteredSets.length === 0 && (
+                            <TableRow>
+                              <TableCell
+                                className="py-8 text-center text-xs text-muted-foreground"
+                                colSpan={5}
+                              >
+                                No sets match the current filter
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </ScrollArea>
+                </div>
               )}
             </>
           )}
@@ -225,7 +267,7 @@ export function ScanSetsDialog({
           <div className="min-w-0 text-xs text-muted-foreground sm:mr-auto">
             {scanState === "results" &&
               missingSets.length > 0 &&
-              `${selectedSetIds.size} of ${missingSets.length} selected`}
+              `${selectedSetIds.size} of ${missingSets.length} selected (${filteredSets.length} shown)`}
           </div>
           <Button variant="outline" onClick={handleClose}>
             Cancel

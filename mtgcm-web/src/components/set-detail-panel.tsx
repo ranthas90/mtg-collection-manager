@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -21,13 +22,18 @@ import { Spinner } from "@/components/ui/spinner";
 import { ManaCost } from "@/components/mana-cost";
 import type { Card, CardSet } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { Layers, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Layers, Search } from "lucide-react";
+
+export type CardSortKey = "name" | "regularPrice" | "foilPrice" | null;
+export type CardSortDirection = "asc" | "desc";
 
 interface SetDetailPanelProps {
   selectedSet: CardSet | null;
   cards: Card[];
   cardsLoading: boolean;
   cardsError: string;
+  active: boolean;
+  focusedCardId: string | null;
   onCardCollectedChange: (cardId: string, collected: boolean) => void;
   updatingCardIds: Set<string>;
   cardNameFilter: string;
@@ -36,6 +42,9 @@ interface SetDetailPanelProps {
   onRarityFilterChange: (value: string) => void;
   ownedFilter: string;
   onOwnedFilterChange: (value: string) => void;
+  sortKey: CardSortKey;
+  sortDirection: CardSortDirection;
+  onSortChange: (sortKey: Exclude<CardSortKey, null>) => void;
   onCardClick: (card: Card) => void;
 }
 
@@ -44,6 +53,8 @@ export function SetDetailPanel({
   cards = [],
   cardsLoading,
   cardsError,
+  active,
+  focusedCardId,
   onCardCollectedChange,
   updatingCardIds,
   cardNameFilter,
@@ -52,8 +63,21 @@ export function SetDetailPanel({
   onRarityFilterChange,
   ownedFilter,
   onOwnedFilterChange,
+  sortKey,
+  sortDirection,
+  onSortChange,
   onCardClick,
 }: SetDetailPanelProps) {
+  useEffect(() => {
+    if (!focusedCardId) {
+      return;
+    }
+
+    document
+      .querySelector(`[data-card-row-id="${CSS.escape(focusedCardId)}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [focusedCardId]);
+
   if (!selectedSet) {
     return (
       <div className="flex flex-1 items-center justify-center bg-background">
@@ -101,6 +125,18 @@ export function SetDetailPanel({
 
   const getDisplayValue = (card: Card) => getRegularPrice(card) ?? getFoilPrice(card) ?? 0;
 
+  const renderSortIcon = (column: Exclude<CardSortKey, null>) => {
+    if (sortKey !== column) {
+      return <ArrowUpDown className="size-3 text-muted-foreground/70" />;
+    }
+
+    return sortDirection === "asc" ? (
+      <ArrowUp className="size-3 text-primary" />
+    ) : (
+      <ArrowDown className="size-3 text-primary" />
+    );
+  };
+
   // Filter cards
   const filteredCards = cards.filter((card) => {
     const matchesName = card.name
@@ -113,6 +149,35 @@ export function SetDetailPanel({
       (ownedFilter === "owned" && card.collected) ||
       (ownedFilter === "missing" && !card.collected);
     return matchesName && matchesRarity && matchesOwned;
+  });
+
+  const sortedCards = [...filteredCards].sort((a, b) => {
+    if (!sortKey) {
+      return 0;
+    }
+
+    const directionMultiplier = sortDirection === "asc" ? 1 : -1;
+
+    if (sortKey === "name") {
+      return a.name.localeCompare(b.name) * directionMultiplier;
+    }
+
+    const aPrice = sortKey === "regularPrice" ? getRegularPrice(a) : getFoilPrice(a);
+    const bPrice = sortKey === "regularPrice" ? getRegularPrice(b) : getFoilPrice(b);
+
+    if (aPrice === null && bPrice === null) {
+      return a.name.localeCompare(b.name);
+    }
+
+    if (aPrice === null) {
+      return 1;
+    }
+
+    if (bPrice === null) {
+      return -1;
+    }
+
+    return (aPrice - bPrice) * directionMultiplier;
   });
 
   const totalValue = cards.reduce((sum, card) => sum + getDisplayValue(card), 0);
@@ -280,7 +345,14 @@ export function SetDetailPanel({
                   Image
                 </TableHead>
                 <TableHead className="h-8 text-[11px] font-medium text-muted-foreground">
-                  Name
+                  <button
+                    className="inline-flex items-center gap-1 hover:text-foreground"
+                    onClick={() => onSortChange("name")}
+                    type="button"
+                  >
+                    Name
+                    {renderSortIcon("name")}
+                  </button>
                 </TableHead>
                 <TableHead className="h-8 text-[11px] font-medium text-muted-foreground">
                   Type
@@ -292,10 +364,24 @@ export function SetDetailPanel({
                   Mana
                 </TableHead>
                 <TableHead className="h-8 text-[11px] font-medium text-muted-foreground text-right">
-                  Regular Price
+                  <button
+                    className="ml-auto inline-flex items-center gap-1 hover:text-foreground"
+                    onClick={() => onSortChange("regularPrice")}
+                    type="button"
+                  >
+                    Regular Price
+                    {renderSortIcon("regularPrice")}
+                  </button>
                 </TableHead>
                 <TableHead className="h-8 text-[11px] font-medium text-muted-foreground text-right">
-                  Foil Price
+                  <button
+                    className="ml-auto inline-flex items-center gap-1 hover:text-foreground"
+                    onClick={() => onSortChange("foilPrice")}
+                    type="button"
+                  >
+                    Foil Price
+                    {renderSortIcon("foilPrice")}
+                  </button>
                 </TableHead>
                 <TableHead className="h-8 w-16 text-[11px] font-medium text-muted-foreground text-center">
                   Owned
@@ -303,13 +389,16 @@ export function SetDetailPanel({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCards.map((card) => (
+              {sortedCards.map((card) => (
                 <TableRow
                   key={card.id}
+                  data-card-row-id={card.id}
                   onClick={() => onCardClick(card)}
                   className={cn(
                     "border-border cursor-pointer",
-                    card.collected
+                    active && focusedCardId === card.id
+                      ? "bg-primary/15 ring-1 ring-inset ring-primary/35 hover:bg-primary/20"
+                      : card.collected
                       ? "bg-primary/5 hover:bg-primary/10"
                       : "hover:bg-secondary",
                   )}

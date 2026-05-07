@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -15,6 +16,7 @@ import { Search } from "lucide-react";
 interface SetsPanelProps {
   sets: CardSet[];
   selectedSet: CardSet | null;
+  active: boolean;
   onSetSelect: (set: CardSet) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -23,6 +25,7 @@ interface SetsPanelProps {
 export function SetsPanel({
   sets,
   selectedSet,
+  active,
   onSetSelect,
   searchQuery,
   onSearchChange,
@@ -42,6 +45,16 @@ export function SetsPanel({
   const filteredSets = sets.filter((set) =>
     set.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
+
+  useEffect(() => {
+    if (!selectedSet) {
+      return;
+    }
+
+    document
+      .querySelector(`[data-set-row-id="${CSS.escape(selectedSet.id)}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [selectedSet]);
 
   return (
     <div className="flex w-80 flex-col border-r border-border bg-card">
@@ -87,10 +100,13 @@ export function SetsPanel({
             {filteredSets.map((set) => (
               <TableRow
                 key={set.id}
+                data-set-row-id={set.id}
                 onClick={() => onSetSelect(set)}
                 className={cn(
                   "cursor-pointer border-border",
-                  selectedSet?.id === set.id
+                  selectedSet?.id === set.id && active
+                    ? "bg-primary/15 ring-1 ring-inset ring-primary/35 hover:bg-primary/20"
+                    : selectedSet?.id === set.id
                     ? "bg-primary/10 hover:bg-primary/15"
                     : "hover:bg-secondary",
                 )}
