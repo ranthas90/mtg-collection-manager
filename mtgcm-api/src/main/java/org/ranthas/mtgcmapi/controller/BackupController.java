@@ -39,11 +39,12 @@ public class BackupController {
         response.setHeader("Pragma", "no-cache");
         response.setHeader("Expires", "0");
         response.setContentType("application/zip");
-        // content-length?
 
         return outputStream -> {
             Resource resource = backupService.exportCollection();
             InputStream inputStream = resource.getInputStream();
+            response.setContentLength(resource.getContentAsByteArray().length);
+
             int length;
             byte[] buffer = new byte[1024];
             while ((length = inputStream.read(buffer)) >= 0) {

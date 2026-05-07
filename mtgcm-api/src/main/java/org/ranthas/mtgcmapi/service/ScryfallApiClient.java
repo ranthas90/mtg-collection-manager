@@ -4,6 +4,7 @@ import org.ranthas.mtgcmapi.configuration.ScryfallProperties;
 import org.ranthas.mtgcmapi.dto.ScryfallCard;
 import org.ranthas.mtgcmapi.dto.ScryfallList;
 import org.ranthas.mtgcmapi.dto.ScryfallSet;
+import org.ranthas.mtgcmapi.exception.model.ScryfallApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
@@ -13,7 +14,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientException;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -42,7 +42,7 @@ public class ScryfallApiClient {
             return setsResponse.getData().stream().filter(ScryfallSet::isValid).toList();
         } catch (WebClientException e) {
             LOGGER.error("Error finding all sets from Scryfall", e);
-            return Collections.emptyList();
+            throw new ScryfallApiException("Error finding all sets from Scryfall", e);
         }
     }
 
@@ -69,7 +69,7 @@ public class ScryfallApiClient {
 
         } catch (WebClientException e) {
             LOGGER.error("Error finding set {} cards from Scryfall", setCode, e);
-            return Collections.emptyList();
+            throw new ScryfallApiException("Error finding set " + setCode + " cards from Scryfall", e);
         }
     }
 

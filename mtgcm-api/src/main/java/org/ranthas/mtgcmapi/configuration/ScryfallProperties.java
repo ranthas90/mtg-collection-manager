@@ -13,12 +13,12 @@ public class ScryfallProperties {
     private final String setByCodeUri;
     private final String setCardsUri;
 
-    public ScryfallProperties(@Value("${base-url}") String baseUrl,
-                              @Value("${user-agent-header}") String userAgentHeader,
-                              @Value("${accept-header}") String acceptHeader,
-                              @Value("${sets-uri}") String setsUri,
-                              @Value("${set-by-code-uri}") String setByCodeUri,
-                              @Value("${set-cards-uri}") String setCardsUri) {
+    public ScryfallProperties(@Value("${scryfall.base-url}") String baseUrl,
+                              @Value("${scryfall.user-agent-header}") String userAgentHeader,
+                              @Value("${scryfall.accept-header}") String acceptHeader,
+                              @Value("${scryfall.sets-uri}") String setsUri,
+                              @Value("${scryfall.set-by-code-uri}") String setByCodeUri,
+                              @Value("${scryfall.set-cards-uri}") String setCardsUri) {
         this.baseUrl = baseUrl;
         this.userAgentHeader = userAgentHeader;
         this.acceptHeader = acceptHeader;
