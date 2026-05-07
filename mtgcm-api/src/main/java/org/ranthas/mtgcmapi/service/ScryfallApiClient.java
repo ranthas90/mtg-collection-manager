@@ -28,7 +28,7 @@ public class ScryfallApiClient {
         this.properties = properties;
         this.webClient = WebClient.builder()
                 .baseUrl(properties.getBaseUrl())
-                .codecs(clientCodecConfigurer -> clientCodecConfigurer.defaultCodecs().maxInMemorySize(-1))
+                .codecs(c -> c.defaultCodecs().maxInMemorySize(-1))
                 .defaultHeaders(httpHeaders -> {
                     httpHeaders.add(HttpHeaders.USER_AGENT, properties.getUserAgentHeader());
                     httpHeaders.add(HttpHeaders.ACCEPT, properties.getAcceptHeader());

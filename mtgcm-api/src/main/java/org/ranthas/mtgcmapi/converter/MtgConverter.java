@@ -18,8 +18,9 @@ public class MtgConverter {
         LocalDate releaseDate = mtgSet.getReleaseDate();
         Long totalCards = mtgSet.getTotalCards();
         Long collectedCards = mtgSet.getCollectedCards();
+        String iconUri = mtgSet.getIconUri();
 
-        return new SetDto(code, name, type, releaseDate, totalCards, collectedCards);
+        return new SetDto(code, name, type, releaseDate, totalCards, collectedCards, iconUri);
     }
 
     public CardDto convert(MtgCard mtgCard) {
