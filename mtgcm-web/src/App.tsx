@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { SetsPanel } from "@/components/sets-panel";
 import { SetDetailPanel } from "@/components/set-detail-panel";
 import { ScanSetsDialog } from "@/components/scan-sets-dialog";
 import { CardDetailDialog } from "@/components/card-detail-dialog";
+import { Progress } from "@/components/ui/progress";
+import { Spinner } from "@/components/ui/spinner";
 import { Toaster } from "@/components/ui/sonner";
 import {
   DropdownMenu,
@@ -15,11 +17,70 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { CardSet, Card } from "@/lib/data";
 import {
+  exportCollection,
   fetchSetCards,
   fetchSets,
+  importCollection,
   loadCollections,
   updateCardCollected,
+  type DownloadProgress,
+  type LoadCollectionsResult,
 } from "@/lib/api";
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function showImportResults(results: LoadCollectionsResult[]) {
+  const successfulImports = results.filter((result) => result.success);
+  const failedImports = results.filter((result) => !result.success);
+
+  if (successfulImports.length > 0 && failedImports.length === 0) {
+    toast.success(
+      `Imported ${successfulImports.length} set${successfulImports.length === 1 ? "" : "s"}.`,
+      {
+        description: successfulImports
+          .map((result) => `${result.setCode} (${result.timeTaken} ms)`)
+          .join(", "),
+      },
+    );
+    return;
+  }
+
+  if (successfulImports.length > 0) {
+    toast.warning(
+      `Imported ${successfulImports.length} set${successfulImports.length === 1 ? "" : "s"}, ${failedImports.length} failed.`,
+      {
+        description: [
+          `Success: ${successfulImports
+            .map((result) => `${result.setCode} (${result.timeTaken} ms)`)
+            .join(", ")}`,
+          `Failed: ${failedImports
+            .map((result) => `${result.setCode} (${result.timeTaken} ms)`)
+            .join(", ")}`,
+        ].join(" | "),
+      },
+    );
+    return;
+  }
+
+  toast.error("No sets were imported.", {
+    description:
+      failedImports.length > 0
+        ? `Failed: ${failedImports
+            .map((result) => `${result.setCode} (${result.timeTaken} ms)`)
+            .join(", ")}`
+        : "The backend did not import any sets.",
+  });
+}
 
 function App() {
   const [selectedSet, setSelectedSet] = useState<CardSet | null>(null);
@@ -32,6 +93,15 @@ function App() {
   const [scanDialogOpen, setScanDialogOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [cardDetailOpen, setCardDetailOpen] = useState(false);
+  const [exportDownloading, setExportDownloading] = useState(false);
+  const [importProcessing, setImportProcessing] = useState(false);
+  const [exportProgress, setExportProgress] = useState<DownloadProgress>({
+    downloadedBytes: 0,
+    totalBytes: null,
+    percent: null,
+  });
+  const importFileInputRef = useRef<HTMLInputElement>(null);
+  const blockingInteraction = exportDownloading || importProcessing;
 
   // Filter states
   const [setSearchQuery, setSetSearchQuery] = useState("");
@@ -115,7 +185,6 @@ function App() {
     const setIds = newSets.map((set) => set.id);
     const results = await loadCollections(setIds);
     const successfulImports = results.filter((result) => result.success);
-    const failedImports = results.filter((result) => !result.success);
 
     await refetchSets();
 
@@ -135,43 +204,84 @@ function App() {
       return next;
     });
 
-    if (successfulImports.length > 0 && failedImports.length === 0) {
-      toast.success(
-        `Imported ${successfulImports.length} set${successfulImports.length === 1 ? "" : "s"}.`,
-        {
-          description: successfulImports
-            .map((result) => `${result.setCode} (${result.timeTaken} ms)`)
-            .join(", "),
-        },
-      );
+    showImportResults(results);
+  };
+
+  const handleExportCollection = async () => {
+    if (blockingInteraction) {
       return;
     }
 
-    if (successfulImports.length > 0) {
-      toast.warning(
-        `Imported ${successfulImports.length} set${successfulImports.length === 1 ? "" : "s"}, ${failedImports.length} failed.`,
-        {
-          description: [
-            successfulImports.length > 0
-              ? `Success: ${successfulImports.map((result) => result.setCode).join(", ")}`
-              : "",
-            failedImports.length > 0
-              ? `Failed: ${failedImports.map((result) => result.setCode).join(", ")}`
-              : "",
-          ]
-            .filter(Boolean)
-            .join(" | "),
-        },
-      );
-      return;
-    }
-
-    toast.error("No sets were imported.", {
-      description:
-        failedImports.length > 0
-          ? `Failed: ${failedImports.map((result) => result.setCode).join(", ")}`
-          : "The backend did not import any selected sets.",
+    setExportDownloading(true);
+    setExportProgress({
+      downloadedBytes: 0,
+      totalBytes: null,
+      percent: null,
     });
+
+    try {
+      const { blob, filename } = await exportCollection(setExportProgress);
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(downloadUrl);
+
+      toast.success("Collection exported.", {
+        description: `${filename} downloaded successfully.`,
+      });
+    } catch (error) {
+      toast.error("Failed to export collection.", {
+        description:
+          error instanceof Error ? error.message : "The backend rejected the export.",
+      });
+    } finally {
+      setExportDownloading(false);
+    }
+  };
+
+  const handleImportCollectionSelect = () => {
+    if (blockingInteraction) {
+      return;
+    }
+
+    importFileInputRef.current?.click();
+  };
+
+  const handleImportCollectionFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+
+    event.target.value = "";
+
+    if (!file || importProcessing) {
+      return;
+    }
+
+    setImportProcessing(true);
+
+    try {
+      const results = await importCollection(file);
+      await refetchSets();
+      setCards({});
+      setLoadedSetIds(new Set());
+      setSelectedCard(null);
+      setCardDetailOpen(false);
+
+      showImportResults(results);
+    } catch (error) {
+      toast.error("Failed to import collection.", {
+        description:
+          error instanceof Error ? error.message : "The backend rejected the import.",
+      });
+    } finally {
+      setImportProcessing(false);
+    }
   };
 
   useEffect(() => {
@@ -251,6 +361,23 @@ function App() {
     };
   }, [loadedSetIds, selectedSet]);
 
+  useEffect(() => {
+    if (!blockingInteraction) {
+      return;
+    }
+
+    const preventInteraction = (event: KeyboardEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    window.addEventListener("keydown", preventInteraction, true);
+
+    return () => {
+      window.removeEventListener("keydown", preventInteraction, true);
+    };
+  }, [blockingInteraction]);
+
   return (
       <div className="flex h-screen flex-col bg-background">
         {/* Title Bar */}
@@ -278,8 +405,18 @@ function App() {
                   Scan for New Sets...
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem disabled>Export Collection</DropdownMenuItem>
-                <DropdownMenuItem disabled>Import Collection</DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={blockingInteraction}
+                  onSelect={() => void handleExportCollection()}
+                >
+                  Export Collection
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={blockingInteraction}
+                  onSelect={handleImportCollectionSelect}
+                >
+                  Import Collection
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <span className="px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground rounded-sm cursor-default">
@@ -354,6 +491,74 @@ function App() {
             onCollectedChange={handleCardCollectedChange}
             updatingCardIds={updatingCardIds}
         />
+        <input
+          ref={importFileInputRef}
+          accept=".zip,application/zip,application/x-zip-compressed"
+          className="hidden"
+          onChange={(event) => void handleImportCollectionFileChange(event)}
+          type="file"
+        />
+        {exportDownloading ? (
+          <div
+            aria-live="polite"
+            aria-modal="true"
+            className="fixed inset-0 z-[100] flex cursor-wait items-center justify-center bg-background/70 backdrop-blur-sm"
+            role="dialog"
+          >
+            <div className="w-[min(420px,calc(100vw-2rem))] rounded-lg border border-border bg-card p-4 shadow-lg">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-medium text-foreground">
+                    Exporting collection
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Downloading collection.zip
+                  </p>
+                </div>
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {exportProgress.percent === null
+                    ? formatBytes(exportProgress.downloadedBytes)
+                    : `${exportProgress.percent}%`}
+                </span>
+              </div>
+              <Progress
+                className={
+                  exportProgress.percent === null
+                    ? "[&_[data-slot=progress-indicator]]:animate-pulse"
+                    : undefined
+                }
+                value={exportProgress.percent ?? 100}
+              />
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                {exportProgress.totalBytes
+                  ? `${formatBytes(exportProgress.downloadedBytes)} of ${formatBytes(
+                      exportProgress.totalBytes,
+                    )}`
+                  : "Waiting for download size..."}
+              </p>
+            </div>
+          </div>
+        ) : null}
+        {importProcessing ? (
+          <div
+            aria-live="polite"
+            aria-modal="true"
+            className="fixed inset-0 z-[100] flex cursor-wait items-center justify-center bg-background/70 backdrop-blur-sm"
+            role="dialog"
+          >
+            <div className="flex w-[min(360px,calc(100vw-2rem))] items-center gap-3 rounded-lg border border-border bg-card p-4 shadow-lg">
+              <Spinner className="size-5 text-primary" />
+              <div>
+                <h2 className="text-sm font-medium text-foreground">
+                  Importing collection
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Uploading and processing the zip file...
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
         <Toaster />
       </div>
   );

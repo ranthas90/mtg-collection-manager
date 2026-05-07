@@ -4,6 +4,8 @@ const SETS_ENDPOINT = "http://localhost:8080/sets";
 const MISSING_SETS_ENDPOINT = "http://localhost:8080/missing-sets";
 const SCRYFALL_SYMBOLOGY_ENDPOINT = "https://api.scryfall.com/symbology";
 const LOAD_COLLECTIONS_ENDPOINT = "http://localhost:8080/load-collections";
+const EXPORT_COLLECTION_ENDPOINT = "http://localhost:8080/export-collection";
+const IMPORT_COLLECTION_ENDPOINT = "http://localhost:8080/import-collection";
 
 export interface ManaSymbol {
   symbol: string;
@@ -14,6 +16,17 @@ export interface LoadCollectionsResult {
   setCode: string;
   success: boolean;
   timeTaken: number;
+}
+
+export interface DownloadProgress {
+  downloadedBytes: number;
+  totalBytes: number | null;
+  percent: number | null;
+}
+
+export interface ExportCollectionResult {
+  blob: Blob;
+  filename: string;
 }
 
 export async function fetchSets(): Promise<CardSet[]> {
@@ -151,6 +164,103 @@ export async function loadCollections(
 
   if (!Array.isArray(data)) {
     throw new Error("Invalid import response: expected an array");
+  }
+
+  return data as LoadCollectionsResult[];
+}
+
+function getFilenameFromContentDisposition(contentDisposition: string | null): string {
+  if (!contentDisposition) {
+    return "collection.zip";
+  }
+
+  const utf8FilenameMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+
+  if (utf8FilenameMatch?.[1]) {
+    return decodeURIComponent(utf8FilenameMatch[1].replaceAll('"', ""));
+  }
+
+  const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
+
+  return filenameMatch?.[1] ?? "collection.zip";
+}
+
+export async function exportCollection(
+  onProgress: (progress: DownloadProgress) => void,
+): Promise<ExportCollectionResult> {
+  const response = await fetch(EXPORT_COLLECTION_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to export collection: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  if (!response.body) {
+    throw new Error("Failed to export collection: empty response body");
+  }
+
+  const totalBytesHeader = response.headers.get("Content-Length");
+  const totalBytes = totalBytesHeader ? Number(totalBytesHeader) : null;
+  const reader = response.body.getReader();
+  const chunks: BlobPart[] = [];
+  let downloadedBytes = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+
+    if (done) {
+      break;
+    }
+
+    const chunk = new Uint8Array(value.length);
+
+    chunk.set(value);
+    chunks.push(chunk);
+    downloadedBytes += value.length;
+    onProgress({
+      downloadedBytes,
+      totalBytes,
+      percent: totalBytes ? Math.round((downloadedBytes / totalBytes) * 100) : null,
+    });
+  }
+
+  const filename = getFilenameFromContentDisposition(
+    response.headers.get("Content-Disposition"),
+  );
+  const contentType = response.headers.get("Content-Type") ?? "application/zip";
+
+  return {
+    blob: new Blob(chunks, { type: contentType }),
+    filename,
+  };
+}
+
+export async function importCollection(file: File): Promise<LoadCollectionsResult[]> {
+  const formData = new FormData();
+
+  formData.append("file", file);
+
+  const response = await fetch(IMPORT_COLLECTION_ENDPOINT, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to import collection: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const data: unknown = await response.json();
+
+  if (!Array.isArray(data)) {
+    throw new Error("Invalid collection import response: expected an array");
   }
 
   return data as LoadCollectionsResult[];
