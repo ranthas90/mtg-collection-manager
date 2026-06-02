@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,11 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Layers, Search } from "lucide-react";
 
 export type CardSortKey = "name" | "regularPrice" | "foilPrice" | null;
 export type CardSortDirection = "asc" | "desc";
+
+interface HoverPreviewState {
+  card: Card;
+  anchorRect: DOMRect;
+}
 
 interface SetDetailPanelProps {
   selectedSet: CardSet | null;
@@ -68,6 +74,11 @@ export function SetDetailPanel({
   onSortChange,
   onCardClick,
 }: SetDetailPanelProps) {
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [hoverPreview, setHoverPreview] = useState<HoverPreviewState | null>(
+    null,
+  );
+
   useEffect(() => {
     if (!focusedCardId) {
       return;
@@ -77,6 +88,26 @@ export function SetDetailPanel({
       .querySelector(`[data-card-row-id="${CSS.escape(focusedCardId)}"]`)
       ?.scrollIntoView({ block: "nearest" });
   }, [focusedCardId]);
+
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+
+    if (!scrollContainer || !hoverPreview) {
+      return;
+    }
+
+    const clearHoverPreview = () => setHoverPreview(null);
+
+    scrollContainer.addEventListener("scroll", clearHoverPreview, {
+      passive: true,
+    });
+    window.addEventListener("resize", clearHoverPreview);
+
+    return () => {
+      scrollContainer.removeEventListener("scroll", clearHoverPreview);
+      window.removeEventListener("resize", clearHoverPreview);
+    };
+  }, [hoverPreview]);
 
   if (!selectedSet) {
     return (
@@ -124,6 +155,22 @@ export function SetDetailPanel({
     price === null ? "N/A" : `€${price.toFixed(2)}`;
 
   const getDisplayValue = (card: Card) => getRegularPrice(card) ?? getFoilPrice(card) ?? 0;
+
+  const getPreviewImageUri = (card: Card) =>
+    card.imageUriNormal ?? card.imageUriArtCrop ?? null;
+
+  const showHoverPreview = (card: Card, target: HTMLElement) => {
+    if (!getPreviewImageUri(card)) {
+      return;
+    }
+
+    setHoverPreview({
+      card,
+      anchorRect: target.getBoundingClientRect(),
+    });
+  };
+
+  const hideHoverPreview = () => setHoverPreview(null);
 
   const renderSortIcon = (column: Exclude<CardSortKey, null>) => {
     if (sortKey !== column) {
@@ -184,6 +231,25 @@ export function SetDetailPanel({
   const collectedValue = cards
     .filter((c) => c.collected)
     .reduce((sum, card) => sum + getDisplayValue(card), 0);
+  const previewImageUri = hoverPreview ? getPreviewImageUri(hoverPreview.card) : null;
+  const previewWidth = 288;
+  const previewHeight = 402;
+  const previewGap = 16;
+  const viewportPadding = 16;
+  const previewTop = hoverPreview
+    ? Math.min(
+        Math.max(hoverPreview.anchorRect.top - 12, viewportPadding),
+        window.innerHeight - previewHeight - viewportPadding,
+      )
+    : 0;
+  const previewLeft = hoverPreview
+    ? hoverPreview.anchorRect.right + previewWidth + previewGap <= window.innerWidth
+      ? hoverPreview.anchorRect.right + previewGap
+      : Math.max(
+          viewportPadding,
+          hoverPreview.anchorRect.left - previewWidth - previewGap,
+        )
+    : 0;
 
   return (
     <div className="flex flex-1 flex-col bg-background">
@@ -324,7 +390,7 @@ export function SetDetailPanel({
       </div>
 
       {/* Cards Table */}
-      <div className="flex-1 overflow-auto">
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto">
         {cardsLoading ? (
           <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-3">
             <Spinner className="size-6" />
@@ -408,7 +474,13 @@ export function SetDetailPanel({
                   </TableCell>
                   <TableCell className="py-1.5">
                     {card.imageUriArtCrop ? (
-                      <div className="flex h-10 w-16 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-muted/40 shadow-sm">
+                      <div
+                        className="flex h-10 w-16 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-muted/40 shadow-sm"
+                        onMouseEnter={(event) =>
+                          showHoverPreview(card, event.currentTarget)
+                        }
+                        onMouseLeave={hideHoverPreview}
+                      >
                         <img
                           src={card.imageUriArtCrop}
                           alt=""
@@ -427,11 +499,15 @@ export function SetDetailPanel({
                   <TableCell className="py-1.5">
                     <span
                       className={cn(
-                        "text-xs font-medium",
+                        "inline-block text-xs font-medium",
                         card.collected
                           ? "text-foreground"
                           : "text-muted-foreground",
                       )}
+                      onMouseEnter={(event) =>
+                        showHoverPreview(card, event.currentTarget)
+                      }
+                      onMouseLeave={hideHoverPreview}
                     >
                       {card.name}
                     </span>
@@ -451,14 +527,14 @@ export function SetDetailPanel({
                     >
                       {card.rarity}
                     </Badge>
-                </TableCell>
-                <TableCell className="py-1.5">
-                  <ManaCost
-                    manaCost={card.manaCost}
-                    className="text-xs text-muted-foreground"
-                    iconClassName="size-4"
-                  />
-                </TableCell>
+                  </TableCell>
+                  <TableCell className="py-1.5">
+                    <ManaCost
+                      manaCost={card.manaCost}
+                      className="text-xs text-muted-foreground"
+                      iconClassName="size-4"
+                    />
+                  </TableCell>
                   <TableCell className="py-1.5 text-right">
                     <span className="text-xs font-medium text-foreground">
                       {formatPrice(getRegularPrice(card))}
@@ -495,6 +571,35 @@ export function SetDetailPanel({
           </Table>
         )}
       </div>
+      {hoverPreview && previewImageUri
+        ? createPortal(
+            <div
+              className="pointer-events-none fixed z-50 hidden sm:block"
+              style={{
+                left: `${previewLeft}px`,
+                top: `${previewTop}px`,
+              }}
+            >
+              <div className="w-72 overflow-hidden rounded-xl border border-border/80 bg-card shadow-2xl">
+                <img
+                  src={previewImageUri}
+                  alt={hoverPreview.card.name}
+                  className="w-72 bg-muted object-cover"
+                />
+                <div className="border-t border-border/70 px-3 py-2">
+                  <div className="truncate text-sm font-semibold text-foreground">
+                    {hoverPreview.card.name}
+                  </div>
+                  <div className="flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
+                    <span>#{hoverPreview.card.collectionNumber.padStart(3, "0")}</span>
+                    <span className="truncate">{hoverPreview.card.type}</span>
+                  </div>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
