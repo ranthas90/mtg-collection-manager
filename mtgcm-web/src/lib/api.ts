@@ -1,11 +1,11 @@
 import type { Card, CardSet } from "@/lib/data";
 
-const SETS_ENDPOINT = "http://localhost:8080/sets";
-const MISSING_SETS_ENDPOINT = "http://localhost:8080/missing-sets";
+const SETS_ENDPOINT = "http://localhost:8081/sets";
+const MISSING_SETS_ENDPOINT = "http://localhost:8081/missing-sets";
 const SCRYFALL_SYMBOLOGY_ENDPOINT = "https://api.scryfall.com/symbology";
-const LOAD_COLLECTIONS_ENDPOINT = "http://localhost:8080/load-collections";
-const EXPORT_COLLECTION_ENDPOINT = "http://localhost:8080/export-collection";
-const IMPORT_COLLECTION_ENDPOINT = "http://localhost:8080/import-collection";
+const LOAD_COLLECTIONS_ENDPOINT = "http://localhost:8081/load-collections";
+const EXPORT_COLLECTION_ENDPOINT = "http://localhost:8081/export-collection";
+const IMPORT_COLLECTION_ENDPOINT = "http://localhost:8081/import-collection";
 
 export interface ManaSymbol {
   symbol: string;
@@ -64,7 +64,7 @@ export async function fetchMissingSets(): Promise<CardSet[]> {
 }
 
 export async function fetchSetCards(setCode: string): Promise<Card[]> {
-  const response = await fetch(`http://localhost:8080/sets/${setCode}/cards`);
+  const response = await fetch(`http://localhost:8081/sets/${setCode}/cards`);
 
   if (!response.ok) {
     throw new Error(
@@ -87,7 +87,7 @@ export async function updateCardCollected(
   collected: boolean,
 ): Promise<Card> {
   const response = await fetch(
-    `http://localhost:8080/sets/${setCode}/cards/${cardId}`,
+    `http://localhost:8081/sets/${setCode}/cards/${cardId}`,
     {
       method: "PUT",
       headers: {

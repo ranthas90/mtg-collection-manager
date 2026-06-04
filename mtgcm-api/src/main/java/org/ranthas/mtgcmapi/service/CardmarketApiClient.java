@@ -18,6 +18,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
+// TODO: IMPORTANTE! Chequear este enlace: https://api.cardmarket.com/ws/documentation/API:Auth_Overview
 @Service
 public class CardmarketApiClient {
 
@@ -46,7 +47,8 @@ public class CardmarketApiClient {
     // https://api.cardmarket.com/ws/documentation/API:Auth_java
     private String buildAuthorizationHeader(HttpMethod method, String request) {
 
-        String oauthVersion = "2.0";
+        // TODO: comprobar este enlace: https://docs.usebruno.com/auth/oauth1#supported-signature-methods
+        String oauthVersion = "1.0";
         String oauthTimestamp = (System.currentTimeMillis() / 1000) + "";
         String oauthNonce = UUID.randomUUID().toString();
         String oauthConsumerKey = properties.getAppToken();
