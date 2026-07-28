@@ -1,3 +1,8 @@
+### Project folders
+mtgcm-db.mv.db
+mtgcm-db.trace.db
+src/main/resources/static/
+
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
