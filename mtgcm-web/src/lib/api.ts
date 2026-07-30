@@ -112,6 +112,33 @@ export async function updateCardCollected(
   return data as Card;
 }
 
+export async function updateSetCardmarketWantslistId(
+  setCode: string,
+  cardmarketWantslistId: number,
+): Promise<CardSet> {
+  const response = await fetch(`${SETS_ENDPOINT}/${setCode}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ cardmarketWantslistId }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to update Cardmarket wantslist for set ${setCode}: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const data: unknown = await response.json();
+
+  if (typeof data !== "object" || data === null || !("id" in data)) {
+    throw new Error("Invalid set update response: expected a set object");
+  }
+
+  return data as CardSet;
+}
+
 export async function fetchManaSymbols(): Promise<Record<string, string>> {
   const response = await fetch(SCRYFALL_SYMBOLOGY_ENDPOINT);
 

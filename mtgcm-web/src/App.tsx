@@ -28,6 +28,7 @@ import {
   importCollection,
   loadCollections,
   updateCardCollected,
+  updateSetCardmarketWantslistId,
   type DownloadProgress,
   type LoadCollectionsResult,
 } from "@/lib/api";
@@ -199,6 +200,27 @@ function App() {
     setSelectedCard(card);
     setCardDetailOpen(true);
   }, []);
+
+  const handleCardmarketWantslistIdChange = useCallback(
+    async (setCode: string, cardmarketWantslistId: number) => {
+      const updatedSet = await updateSetCardmarketWantslistId(
+        setCode,
+        cardmarketWantslistId,
+      );
+
+      setSets((currentSets) =>
+        currentSets.map((set) => (set.id === setCode ? updatedSet : set)),
+      );
+      setSelectedSet((currentSelectedSet) =>
+        currentSelectedSet?.id === setCode ? updatedSet : currentSelectedSet,
+      );
+
+      toast.success("Cardmarket wantslist updated.", {
+        description: `${updatedSet.name} is linked to wantslist ${cardmarketWantslistId}.`,
+      });
+    },
+    [],
+  );
 
   const handleImportSets = async (newSets: CardSet[]) => {
     const setIds = newSets.map((set) => set.id);
@@ -747,6 +769,7 @@ function App() {
               sortDirection={cardSortDirection}
               onSortChange={handleCardSortChange}
               onCardClick={handleCardClick}
+              onCardmarketWantslistIdChange={handleCardmarketWantslistIdChange}
           />
         </main>
 

@@ -5,6 +5,7 @@ export interface CardSet {
     releaseDate: string;
     totalCards: number;
     collectedCards: number;
+    cardmarketWantslistId: number | null;
     iconUri?: string;
 }
 

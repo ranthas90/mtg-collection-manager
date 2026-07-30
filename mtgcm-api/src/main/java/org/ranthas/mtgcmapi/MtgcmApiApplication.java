@@ -10,7 +10,7 @@ public class MtgcmApiApplication {
 
 	public static void main(String[] args) throws IOException {
 		SpringApplication.run(MtgcmApiApplication.class, args);
-		openHomePage();
+		//openHomePage();
 	}
 
 	// Abre el navegador directamente.

@@ -1,7 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -23,7 +33,16 @@ import { Spinner } from "@/components/ui/spinner";
 import { ManaCost } from "@/components/mana-cost";
 import type { Card, CardSet } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { ArrowDown, ArrowUp, ArrowUpDown, Layers, Search } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ExternalLink,
+  Layers,
+  ListPlus,
+  Pencil,
+  Search,
+} from "lucide-react";
 
 export type CardSortKey = "name" | "regularPrice" | "foilPrice" | null;
 export type CardSortDirection = "asc" | "desc";
@@ -52,6 +71,10 @@ interface SetDetailPanelProps {
   sortDirection: CardSortDirection;
   onSortChange: (sortKey: Exclude<CardSortKey, null>) => void;
   onCardClick: (card: Card) => void;
+  onCardmarketWantslistIdChange: (
+    setCode: string,
+    cardmarketWantslistId: number,
+  ) => Promise<void>;
 }
 
 export function SetDetailPanel({
@@ -73,11 +96,16 @@ export function SetDetailPanel({
   sortDirection,
   onSortChange,
   onCardClick,
+  onCardmarketWantslistIdChange,
 }: SetDetailPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const [hoverPreview, setHoverPreview] = useState<HoverPreviewState | null>(
     null,
   );
+  const [wantslistDialogOpen, setWantslistDialogOpen] = useState(false);
+  const [wantslistIdInput, setWantslistIdInput] = useState("");
+  const [wantslistSaving, setWantslistSaving] = useState(false);
+  const [wantslistError, setWantslistError] = useState("");
 
   useEffect(() => {
     if (!focusedCardId) {
@@ -108,6 +136,19 @@ export function SetDetailPanel({
       window.removeEventListener("resize", clearHoverPreview);
     };
   }, [hoverPreview]);
+
+  useEffect(() => {
+    if (!selectedSet || wantslistDialogOpen) {
+      return;
+    }
+
+    setWantslistIdInput(
+      selectedSet.cardmarketWantslistId == null
+        ? ""
+        : String(selectedSet.cardmarketWantslistId),
+    );
+    setWantslistError("");
+  }, [selectedSet, wantslistDialogOpen]);
 
   if (!selectedSet) {
     return (
@@ -171,6 +212,71 @@ export function SetDetailPanel({
   };
 
   const hideHoverPreview = () => setHoverPreview(null);
+
+  const copyCardNameToClipboard = (cardName: string) => {
+    if (!navigator.clipboard) {
+      toast.error("Card name could not be copied.", {
+        description: "Clipboard access is not available in this browser.",
+      });
+      return;
+    }
+
+    void navigator.clipboard.writeText(cardName).then(
+      () => {
+        toast.success("Card name copied.", {
+          description: cardName,
+        });
+      },
+      () => {
+        toast.error("Card name could not be copied.");
+      },
+    );
+  };
+
+  const handleOpenWantslistDialog = () => {
+    setWantslistIdInput(
+      selectedSet.cardmarketWantslistId == null
+        ? ""
+        : String(selectedSet.cardmarketWantslistId),
+    );
+    setWantslistError("");
+    setWantslistDialogOpen(true);
+  };
+
+  const handleSaveWantslistId = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const trimmedValue = wantslistIdInput.trim();
+    const parsedWantslistId = Number(trimmedValue);
+
+    if (
+      trimmedValue === "" ||
+      !Number.isInteger(parsedWantslistId) ||
+      parsedWantslistId <= 0
+    ) {
+      setWantslistError("Enter a valid wantslist id.");
+      return;
+    }
+
+    setWantslistSaving(true);
+    setWantslistError("");
+
+    try {
+      await onCardmarketWantslistIdChange(
+        selectedSet.id,
+        parsedWantslistId,
+      );
+      setWantslistDialogOpen(false);
+    } catch (error) {
+      setWantslistError(
+        error instanceof Error
+          ? error.message
+          : "The wantslist could not be saved.",
+      );
+    } finally {
+      setWantslistSaving(false);
+    }
+  };
 
   const renderSortIcon = (column: Exclude<CardSortKey, null>) => {
     if (sortKey !== column) {
@@ -250,6 +356,10 @@ export function SetDetailPanel({
           hoverPreview.anchorRect.left - previewWidth - previewGap,
         )
     : 0;
+  const cardmarketAddCardsUrl =
+    selectedSet.cardmarketWantslistId == null
+      ? null
+      : `https://www.cardmarket.com/es/Magic/Wants/${selectedSet.cardmarketWantslistId}/AddCards#&searchMode=v2`;
 
   return (
     <div className="flex flex-1 flex-col bg-background">
@@ -277,6 +387,37 @@ export function SetDetailPanel({
             </div>
           </div>
           <div className="flex flex-col items-end gap-1">
+            <div className="mb-1 flex items-center gap-2">
+              {selectedSet.cardmarketWantslistId == null ? null : (
+                <Button asChild size="sm" variant="outline">
+                  <a
+                    href={`https://www.cardmarket.com/es/Magic/Wants/${selectedSet.cardmarketWantslistId}`}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <ExternalLink className="size-3.5" />
+                    View wantslist
+                  </a>
+                </Button>
+              )}
+              <Button
+                onClick={handleOpenWantslistDialog}
+                size="sm"
+                type="button"
+                variant={
+                  selectedSet.cardmarketWantslistId == null ? "default" : "outline"
+                }
+              >
+                {selectedSet.cardmarketWantslistId == null ? (
+                  <ListPlus className="size-3.5" />
+                ) : (
+                  <Pencil className="size-3.5" />
+                )}
+                {selectedSet.cardmarketWantslistId == null
+                  ? "Link wantslist"
+                  : "Edit wantslist"}
+              </Button>
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Progress:</span>
               <span className="text-sm font-medium text-primary">
@@ -452,6 +593,11 @@ export function SetDetailPanel({
                 <TableHead className="h-8 w-16 text-[11px] font-medium text-muted-foreground text-center">
                   Owned
                 </TableHead>
+                {cardmarketAddCardsUrl ? (
+                  <TableHead className="h-8 w-20 text-[11px] font-medium text-muted-foreground text-center">
+                    Wants
+                  </TableHead>
+                ) : null}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -555,12 +701,33 @@ export function SetDetailPanel({
                       onClick={(e) => e.stopPropagation()}
                     />
                   </TableCell>
+                  {cardmarketAddCardsUrl ? (
+                    <TableCell className="py-1.5 text-center">
+                      {card.collected ? null : (
+                        <Button asChild size="icon-xs" variant="ghost">
+                          <a
+                            aria-label={`Copy ${card.name} and open Cardmarket wantslist add cards`}
+                            href={cardmarketAddCardsUrl}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              copyCardNameToClipboard(card.name);
+                            }}
+                            rel="noreferrer"
+                            target="_blank"
+                            title="Copy card name and open Cardmarket"
+                          >
+                            <ExternalLink className="size-3" />
+                          </a>
+                        </Button>
+                      )}
+                    </TableCell>
+                  ) : null}
                 </TableRow>
               ))}
               {filteredCards.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={cardmarketAddCardsUrl ? 10 : 9}
                     className="py-8 text-center text-xs text-muted-foreground"
                   >
                     No cards match the current filters
@@ -600,6 +767,59 @@ export function SetDetailPanel({
             document.body,
           )
         : null}
+      <Dialog
+        open={wantslistDialogOpen}
+        onOpenChange={(open) => {
+          if (!wantslistSaving) {
+            setWantslistDialogOpen(open);
+          }
+        }}
+      >
+        <DialogContent>
+          <form onSubmit={(event) => void handleSaveWantslistId(event)}>
+            <DialogHeader>
+              <DialogTitle>
+                {selectedSet.cardmarketWantslistId == null
+                  ? "Link wantslist"
+                  : "Edit wantslist"}
+              </DialogTitle>
+              <DialogDescription>
+                Enter the Cardmarket wantslist id associated with this set.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-2">
+              <Input
+                autoFocus
+                inputMode="numeric"
+                min={1}
+                onChange={(event) => {
+                  setWantslistIdInput(event.target.value);
+                  setWantslistError("");
+                }}
+                placeholder="Wantslist id"
+                type="number"
+                value={wantslistIdInput}
+              />
+              {wantslistError ? (
+                <p className="mt-2 text-xs text-destructive">{wantslistError}</p>
+              ) : null}
+            </div>
+            <DialogFooter>
+              <Button
+                disabled={wantslistSaving}
+                onClick={() => setWantslistDialogOpen(false)}
+                type="button"
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              <Button disabled={wantslistSaving} type="submit">
+                {wantslistSaving ? "Saving..." : "Save"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

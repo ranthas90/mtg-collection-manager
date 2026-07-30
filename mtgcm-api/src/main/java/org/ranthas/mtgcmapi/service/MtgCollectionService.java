@@ -1,5 +1,7 @@
 package org.ranthas.mtgcmapi.service;
 
+import org.ranthas.mtgcmapi.dto.SetDto;
+import org.ranthas.mtgcmapi.dto.UpdateSet;
 import org.ranthas.mtgcmapi.dto.UpdateSetCard;
 import org.ranthas.mtgcmapi.entity.MtgCard;
 import org.ranthas.mtgcmapi.entity.MtgSet;
@@ -27,6 +29,13 @@ public class MtgCollectionService {
 
     public List<MtgCard> findAllSetCards(String setCode) {
         return mtgCardRepository.findAllBySetCode(setCode);
+    }
+
+    public MtgSet updateSet(String setCode, UpdateSet request) {
+        MtgSet mtgSet = mtgSetRepository.findByCode(setCode).get(); // TODO: gestionar esto o hacer que devuelva directamente el objeto sin Optional
+        mtgSet.setCardmarketWantslistId(request.cardmarketWantslistId());
+
+        return mtgSetRepository.save(mtgSet);
     }
 
     public MtgCard updateSetCard(UUID cardId, UpdateSetCard request) {

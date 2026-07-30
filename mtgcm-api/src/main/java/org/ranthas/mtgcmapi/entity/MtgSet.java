@@ -29,6 +29,9 @@ public class MtgSet {
     @Column(name = "icon_uri")
     private String iconUri;
 
+    @Column(name = "cardmarket_wantslist_id")
+    private Integer cardmarketWantslistId;
+
     @OneToMany(mappedBy = "mtgSet", cascade = CascadeType.ALL)
     private List<MtgCard> cards = new ArrayList<>();
 
@@ -91,6 +94,14 @@ public class MtgSet {
         this.iconUri = iconUri;
     }
 
+    public Integer getCardmarketWantslistId() {
+        return cardmarketWantslistId;
+    }
+
+    public void setCardmarketWantslistId(Integer cardmarketWantslistId) {
+        this.cardmarketWantslistId = cardmarketWantslistId;
+    }
+
     public List<MtgCard> getCards() {
         return cards;
     }
@@ -118,6 +129,7 @@ public class MtgSet {
                 ", releaseDate=" + releaseDate +
                 ", totalCards=" + totalCards +
                 ", iconUri='" + iconUri + '\'' +
+                ", cardmarketWantslistId=" + cardmarketWantslistId +
                 '}';
     }
 }

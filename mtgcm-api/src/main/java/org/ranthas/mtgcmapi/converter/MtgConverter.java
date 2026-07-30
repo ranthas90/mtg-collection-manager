@@ -19,8 +19,9 @@ public class MtgConverter {
         Long totalCards = mtgSet.getTotalCards();
         Long collectedCards = mtgSet.getCollectedCards();
         String iconUri = mtgSet.getIconUri();
+        Integer cardmarketWantslistId = mtgSet.getCardmarketWantslistId();
 
-        return new SetDto(code, name, type, releaseDate, totalCards, collectedCards, iconUri);
+        return new SetDto(code, name, type, releaseDate, totalCards, collectedCards, iconUri, cardmarketWantslistId);
     }
 
     public CardDto convert(MtgCard mtgCard) {
