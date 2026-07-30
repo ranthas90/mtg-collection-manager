@@ -37,6 +37,8 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  BarChart3,
+  ClipboardList,
   ExternalLink,
   Layers,
   ListPlus,
@@ -106,6 +108,7 @@ export function SetDetailPanel({
   const [wantslistIdInput, setWantslistIdInput] = useState("");
   const [wantslistSaving, setWantslistSaving] = useState(false);
   const [wantslistError, setWantslistError] = useState("");
+  const [purchaseReportOpen, setPurchaseReportOpen] = useState(false);
 
   useEffect(() => {
     if (!focusedCardId) {
@@ -195,6 +198,25 @@ export function SetDetailPanel({
   const formatPrice = (price: number | null) =>
     price === null ? "N/A" : `€${price.toFixed(2)}`;
 
+  const formatReportPrice = (price: number) => `EUR ${price.toFixed(2)}`;
+
+  const rarityOrder: Card["rarity"][] = ["mythic", "rare", "uncommon", "common"];
+
+  const getRarityLabel = (rarity: Card["rarity"]) => {
+    switch (rarity) {
+      case "mythic":
+        return "Mythic";
+      case "rare":
+        return "Rare";
+      case "uncommon":
+        return "Uncommon";
+      case "common":
+        return "Common";
+      default:
+        return rarity;
+    }
+  };
+
   const getDisplayValue = (card: Card) => getRegularPrice(card) ?? getFoilPrice(card) ?? 0;
 
   const getPreviewImageUri = (card: Card) =>
@@ -229,6 +251,31 @@ export function SetDetailPanel({
       },
       () => {
         toast.error("Card name could not be copied.");
+      },
+    );
+  };
+
+  const copyMissingCardsToClipboard = () => {
+    if (!navigator.clipboard) {
+      toast.error("Missing cards could not be copied.", {
+        description: "Clipboard access is not available in this browser.",
+      });
+      return;
+    }
+
+    const missingCardsList = cards
+      .filter((card) => !card.collected)
+      .map((card) => `1 ${card.name} (${card.setCode ?? selectedSet.id})`)
+      .join("\n");
+
+    void navigator.clipboard.writeText(missingCardsList).then(
+      () => {
+        toast.success("Missing cards copied.", {
+          description: `${cards.filter((card) => !card.collected).length} cards copied to the clipboard.`,
+        });
+      },
+      () => {
+        toast.error("Missing cards could not be copied.");
       },
     );
   };
@@ -360,6 +407,30 @@ export function SetDetailPanel({
     selectedSet.cardmarketWantslistId == null
       ? null
       : `https://www.cardmarket.com/es/Magic/Wants/${selectedSet.cardmarketWantslistId}/AddCards#&searchMode=v2`;
+  const cardmarketAddDeckListUrl =
+    selectedSet.cardmarketWantslistId == null
+      ? null
+      : `https://www.cardmarket.com/es/Magic/Wants/${selectedSet.cardmarketWantslistId}/AddDeckList`;
+  const missingCards = cards.filter((card) => !card.collected);
+  const missingCardsCount = missingCards.length;
+  const missingCardsReport = rarityOrder
+    .map((rarity) => {
+      const cardsByRarity = missingCards.filter((card) => card.rarity === rarity);
+
+      return {
+        rarity,
+        count: cardsByRarity.length,
+        totalPrice: cardsByRarity.reduce(
+          (sum, card) => sum + getDisplayValue(card),
+          0,
+        ),
+      };
+    })
+    .filter((item) => item.count > 0);
+  const missingCardsTotalPrice = missingCardsReport.reduce(
+    (sum, item) => sum + item.totalPrice,
+    0,
+  );
 
   return (
     <div className="flex flex-1 flex-col bg-background">
@@ -400,6 +471,30 @@ export function SetDetailPanel({
                   </a>
                 </Button>
               )}
+              {cardmarketAddDeckListUrl && missingCardsCount > 0 ? (
+                <Button asChild size="sm" variant="outline">
+                  <a
+                    href={cardmarketAddDeckListUrl}
+                    onClick={() => copyMissingCardsToClipboard()}
+                    rel="noreferrer"
+                    target="_blank"
+                    title="Copy missing cards and open Cardmarket decklist import"
+                  >
+                    <ClipboardList className="size-3.5" />
+                    Add missing
+                  </a>
+                </Button>
+              ) : null}
+              <Button
+                disabled={cardsLoading || cardsError !== "" || cards.length === 0}
+                onClick={() => setPurchaseReportOpen(true)}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <BarChart3 className="size-3.5" />
+                Purchase report
+              </Button>
               <Button
                 onClick={handleOpenWantslistDialog}
                 size="sm"
@@ -818,6 +913,81 @@ export function SetDetailPanel({
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={purchaseReportOpen} onOpenChange={setPurchaseReportOpen}>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Purchase report</DialogTitle>
+            <DialogDescription>
+              Missing cards grouped by rarity for {selectedSet.name}.
+            </DialogDescription>
+          </DialogHeader>
+          {missingCardsCount === 0 ? (
+            <div className="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">
+              This set is complete. There are no missing cards to buy.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-md border border-border bg-card p-3">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Missing Cards
+                  </span>
+                  <p className="mt-1 text-xl font-semibold text-foreground">
+                    {missingCardsCount}
+                  </p>
+                </div>
+                <div className="rounded-md border border-border bg-card p-3">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Estimated Total
+                  </span>
+                  <p className="mt-1 text-xl font-semibold text-primary">
+                    {formatReportPrice(missingCardsTotalPrice)}
+                  </p>
+                </div>
+              </div>
+              <div className="overflow-hidden rounded-md border border-border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableHead className="h-8 text-[11px]">Rarity</TableHead>
+                      <TableHead className="h-8 text-right text-[11px]">
+                        Cards
+                      </TableHead>
+                      <TableHead className="h-8 text-right text-[11px]">
+                        Total Price
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {missingCardsReport.map((item) => (
+                      <TableRow key={item.rarity}>
+                        <TableCell className="py-2">
+                          <Badge
+                            className={cn(
+                              "px-1.5 py-0 text-[10px]",
+                              getRarityColor(item.rarity),
+                            )}
+                            variant="outline"
+                          >
+                            {getRarityLabel(item.rarity)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-2 text-right text-xs font-medium text-foreground">
+                          {item.count}
+                        </TableCell>
+                        <TableCell className="py-2 text-right text-xs font-medium text-primary">
+                          {formatReportPrice(item.totalPrice)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+          <DialogFooter showCloseButton />
         </DialogContent>
       </Dialog>
     </div>
