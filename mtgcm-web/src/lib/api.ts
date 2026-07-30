@@ -29,6 +29,25 @@ export interface ExportCollectionResult {
   filename: string;
 }
 
+interface ScryfallCardPrices {
+  eur: string | null;
+  eur_foil: string | null;
+}
+
+interface ScryfallCardResponse {
+  prices?: Partial<ScryfallCardPrices> | null;
+}
+
+function parseNullablePrice(price: string | null | undefined): number | null {
+  if (price == null) {
+    return null;
+  }
+
+  const parsedPrice = Number(price);
+
+  return Number.isFinite(parsedPrice) ? parsedPrice : null;
+}
+
 export async function fetchSets(): Promise<CardSet[]> {
   const response = await fetch(SETS_ENDPOINT);
 
@@ -110,6 +129,61 @@ export async function updateCardCollected(
   }
 
   return data as Card;
+}
+
+export async function updateCardImageUrl(
+  setCode: string,
+  cardId: string,
+  imageUriNormal: string,
+): Promise<Card> {
+  const response = await fetch(
+    `http://localhost:8081/sets/${setCode}/cards/${cardId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ imageUriNormal }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to update image URL for card ${cardId} in set ${setCode}: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const data: unknown = await response.json();
+
+  if (typeof data !== "object" || data === null || !("id" in data)) {
+    throw new Error("Invalid card image update response: expected a card object");
+  }
+
+  return data as Card;
+}
+
+export async function refreshCardPrice(card: Card): Promise<Card> {
+  const response = await fetch(
+    `https://api.scryfall.com/cards/${encodeURIComponent(card.id)}`,
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to refresh price for card ${card.id}: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const data = (await response.json()) as ScryfallCardResponse;
+
+  if (typeof data !== "object" || data === null || data.prices == null) {
+    throw new Error("Invalid Scryfall card response: expected prices");
+  }
+
+  return {
+    ...card,
+    regularPrice: parseNullablePrice(data.prices.eur),
+    foilPrice: parseNullablePrice(data.prices.eur_foil),
+  };
 }
 
 export async function updateSetCardmarketWantslistId(

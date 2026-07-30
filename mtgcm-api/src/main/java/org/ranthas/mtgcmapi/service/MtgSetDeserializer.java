@@ -36,6 +36,7 @@ public class MtgSetDeserializer extends StdDeserializer<MtgSet> {
         set.setReleaseDate(LocalDate.parse(node.get("release_date").asString(), DateTimeFormatter.ofPattern("yyyy-MM-dd")));
         set.setIconUri(node.get("icon_uri").asString());
         set.setTotalCards(node.get("total_cards").asLong());
+        set.setCardmarketWantslistId(node.get("cardmarket_wantslist_id").asInt());
 
         ArrayNode cards = node.get("cards").asArray();
         for (JsonNode cardNode : cards) {

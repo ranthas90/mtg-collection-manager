@@ -27,7 +27,9 @@ import {
   fetchSets,
   importCollection,
   loadCollections,
+  refreshCardPrice,
   updateCardCollected,
+  updateCardImageUrl,
   updateSetCardmarketWantslistId,
   type DownloadProgress,
   type LoadCollectionsResult,
@@ -193,6 +195,58 @@ function App() {
       });
     }
   }, [selectedSet, updatingCardIds]);
+
+  const replaceCard = useCallback((setId: string, updatedCard: Card) => {
+    setCards((prev) => {
+      const currentCards = prev[setId] ?? [];
+
+      return {
+        ...prev,
+        [setId]: currentCards.map((card) =>
+          card.id === updatedCard.id ? updatedCard : card,
+        ),
+      };
+    });
+    setSelectedCard((prev) => (prev?.id === updatedCard.id ? updatedCard : prev));
+  }, []);
+
+  const handleCardImageUrlChange = useCallback(
+    async (cardId: string, imageUriNormal: string) => {
+      if (!selectedSet) return;
+
+      const updatedCard = await updateCardImageUrl(
+        selectedSet.id,
+        cardId,
+        imageUriNormal,
+      );
+
+      replaceCard(selectedSet.id, updatedCard);
+      toast.success("Card image updated.", {
+        description: updatedCard.name,
+      });
+    },
+    [replaceCard, selectedSet],
+  );
+
+  const handleCardPriceRefresh = useCallback(
+    async (cardId: string) => {
+      if (!selectedSet) return;
+
+      const currentCard = cards[selectedSet.id]?.find((card) => card.id === cardId);
+
+      if (!currentCard) {
+        throw new Error("The selected card is no longer loaded.");
+      }
+
+      const updatedCard = await refreshCardPrice(currentCard);
+
+      replaceCard(selectedSet.id, updatedCard);
+      toast.success("Card price refreshed.", {
+        description: updatedCard.name,
+      });
+    },
+    [cards, replaceCard, selectedSet],
+  );
 
   const handleCardClick = useCallback((card: Card) => {
     setActivePane("cards");
@@ -769,6 +823,8 @@ function App() {
               sortDirection={cardSortDirection}
               onSortChange={handleCardSortChange}
               onCardClick={handleCardClick}
+              onCardImageUrlChange={handleCardImageUrlChange}
+              onCardPriceRefresh={handleCardPriceRefresh}
               onCardmarketWantslistIdChange={handleCardmarketWantslistIdChange}
           />
         </main>

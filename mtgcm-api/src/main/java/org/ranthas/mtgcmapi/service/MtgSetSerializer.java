@@ -32,6 +32,7 @@ public class MtgSetSerializer extends StdSerializer<MtgSet> {
         gen.writeStringProperty("release_date", value.getReleaseDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
         gen.writeNumberProperty("total_cards", value.getTotalCards());
         gen.writeStringProperty("icon_uri", value.getIconUri());
+        gen.writeNumberProperty("cardmarket_wantslist_id", value.getCardmarketWantslistId());
         gen.writeArrayPropertyStart("cards");
 
         for (MtgCard card : value.getCards()) {

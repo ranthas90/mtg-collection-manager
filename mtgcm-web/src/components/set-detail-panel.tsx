@@ -43,6 +43,8 @@ import {
   Layers,
   ListPlus,
   Pencil,
+  RefreshCw,
+  Save,
   Search,
 } from "lucide-react";
 
@@ -73,6 +75,8 @@ interface SetDetailPanelProps {
   sortDirection: CardSortDirection;
   onSortChange: (sortKey: Exclude<CardSortKey, null>) => void;
   onCardClick: (card: Card) => void;
+  onCardImageUrlChange: (cardId: string, imageUriNormal: string) => Promise<void>;
+  onCardPriceRefresh: (cardId: string) => Promise<void>;
   onCardmarketWantslistIdChange: (
     setCode: string,
     cardmarketWantslistId: number,
@@ -98,6 +102,8 @@ export function SetDetailPanel({
   sortDirection,
   onSortChange,
   onCardClick,
+  onCardImageUrlChange,
+  onCardPriceRefresh,
   onCardmarketWantslistIdChange,
 }: SetDetailPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -109,6 +115,12 @@ export function SetDetailPanel({
   const [wantslistSaving, setWantslistSaving] = useState(false);
   const [wantslistError, setWantslistError] = useState("");
   const [purchaseReportOpen, setPurchaseReportOpen] = useState(false);
+  const [cardEditDialogOpen, setCardEditDialogOpen] = useState(false);
+  const [cardBeingEdited, setCardBeingEdited] = useState<Card | null>(null);
+  const [cardImageUrlInput, setCardImageUrlInput] = useState("");
+  const [cardImageSaving, setCardImageSaving] = useState(false);
+  const [cardPriceRefreshing, setCardPriceRefreshing] = useState(false);
+  const [cardEditError, setCardEditError] = useState("");
 
   useEffect(() => {
     if (!focusedCardId) {
@@ -152,6 +164,18 @@ export function SetDetailPanel({
     );
     setWantslistError("");
   }, [selectedSet, wantslistDialogOpen]);
+
+  useEffect(() => {
+    if (!cardBeingEdited) {
+      return;
+    }
+
+    const updatedCard = cards.find((card) => card.id === cardBeingEdited.id);
+
+    if (updatedCard) {
+      setCardBeingEdited(updatedCard);
+    }
+  }, [cardBeingEdited, cards]);
 
   if (!selectedSet) {
     return (
@@ -290,6 +314,13 @@ export function SetDetailPanel({
     setWantslistDialogOpen(true);
   };
 
+  const handleOpenCardEditDialog = (card: Card) => {
+    setCardBeingEdited(card);
+    setCardImageUrlInput(card.imageUriNormal ?? "");
+    setCardEditError("");
+    setCardEditDialogOpen(true);
+  };
+
   const handleSaveWantslistId = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -322,6 +353,54 @@ export function SetDetailPanel({
       );
     } finally {
       setWantslistSaving(false);
+    }
+  };
+
+  const handleSaveCardImageUrl = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!cardBeingEdited) {
+      return;
+    }
+
+    const nextImageUrl = cardImageUrlInput.trim();
+
+    if (nextImageUrl === "") {
+      setCardEditError("Enter an image URL.");
+      return;
+    }
+
+    setCardImageSaving(true);
+    setCardEditError("");
+
+    try {
+      await onCardImageUrlChange(cardBeingEdited.id, nextImageUrl);
+      setCardEditDialogOpen(false);
+    } catch (error) {
+      setCardEditError(
+        error instanceof Error ? error.message : "The image URL could not be saved.",
+      );
+    } finally {
+      setCardImageSaving(false);
+    }
+  };
+
+  const handleRefreshCardPrice = async () => {
+    if (!cardBeingEdited) {
+      return;
+    }
+
+    setCardPriceRefreshing(true);
+    setCardEditError("");
+
+    try {
+      await onCardPriceRefresh(cardBeingEdited.id);
+    } catch (error) {
+      setCardEditError(
+        error instanceof Error ? error.message : "The card price could not be refreshed.",
+      );
+    } finally {
+      setCardPriceRefreshing(false);
     }
   };
 
@@ -688,6 +767,9 @@ export function SetDetailPanel({
                 <TableHead className="h-8 w-16 text-[11px] font-medium text-muted-foreground text-center">
                   Owned
                 </TableHead>
+                <TableHead className="h-8 w-16 text-[11px] font-medium text-muted-foreground text-center">
+                  Edit
+                </TableHead>
                 {cardmarketAddCardsUrl ? (
                   <TableHead className="h-8 w-20 text-[11px] font-medium text-muted-foreground text-center">
                     Wants
@@ -796,6 +878,21 @@ export function SetDetailPanel({
                       onClick={(e) => e.stopPropagation()}
                     />
                   </TableCell>
+                  <TableCell className="py-1.5 text-center">
+                    <Button
+                      aria-label={`Editar carta ${card.name}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleOpenCardEditDialog(card);
+                      }}
+                      size="icon-xs"
+                      title="Editar carta"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Pencil className="size-3" />
+                    </Button>
+                  </TableCell>
                   {cardmarketAddCardsUrl ? (
                     <TableCell className="py-1.5 text-center">
                       {card.collected ? null : (
@@ -822,7 +919,7 @@ export function SetDetailPanel({
               {filteredCards.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={cardmarketAddCardsUrl ? 10 : 9}
+                    colSpan={cardmarketAddCardsUrl ? 11 : 10}
                     className="py-8 text-center text-xs text-muted-foreground"
                   >
                     No cards match the current filters
@@ -910,6 +1007,101 @@ export function SetDetailPanel({
               </Button>
               <Button disabled={wantslistSaving} type="submit">
                 {wantslistSaving ? "Saving..." : "Save"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={cardEditDialogOpen}
+        onOpenChange={(open) => {
+          if (!cardImageSaving && !cardPriceRefreshing) {
+            setCardEditDialogOpen(open);
+          }
+        }}
+      >
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-[520px]">
+          <form onSubmit={(event) => void handleSaveCardImageUrl(event)}>
+            <DialogHeader>
+              <DialogTitle>Editar carta</DialogTitle>
+              <DialogDescription>
+                {cardBeingEdited
+                  ? `${cardBeingEdited.name} #${cardBeingEdited.collectionNumber.padStart(3, "0")}`
+                  : "Edit card details."}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-md border border-border bg-card p-3">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Regular Price
+                  </span>
+                  <p className="mt-1 text-sm font-semibold text-foreground">
+                    {cardBeingEdited
+                      ? formatPrice(getRegularPrice(cardBeingEdited))
+                      : "N/A"}
+                  </p>
+                </div>
+                <div className="rounded-md border border-border bg-card p-3">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Foil Price
+                  </span>
+                  <p className="mt-1 text-sm font-semibold text-foreground">
+                    {cardBeingEdited
+                      ? formatPrice(getFoilPrice(cardBeingEdited))
+                      : "N/A"}
+                  </p>
+                </div>
+              </div>
+              <Button
+                className="w-full"
+                disabled={!cardBeingEdited || cardImageSaving || cardPriceRefreshing}
+                onClick={() => void handleRefreshCardPrice()}
+                type="button"
+                variant="outline"
+              >
+                <RefreshCw
+                  className={cn("size-3.5", cardPriceRefreshing && "animate-spin")}
+                />
+                {cardPriceRefreshing ? "Actualizando precio..." : "Actualizar precio"}
+              </Button>
+              <div className="space-y-2">
+                <label
+                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                  htmlFor="card-image-url"
+                >
+                  URL de imagen
+                </label>
+                <Input
+                  id="card-image-url"
+                  onChange={(event) => {
+                    setCardImageUrlInput(event.target.value);
+                    setCardEditError("");
+                  }}
+                  placeholder="https://..."
+                  type="url"
+                  value={cardImageUrlInput}
+                />
+              </div>
+              {cardEditError ? (
+                <p className="text-xs text-destructive">{cardEditError}</p>
+              ) : null}
+            </div>
+            <DialogFooter>
+              <Button
+                disabled={cardImageSaving || cardPriceRefreshing}
+                onClick={() => setCardEditDialogOpen(false)}
+                type="button"
+                variant="outline"
+              >
+                Cancelar
+              </Button>
+              <Button
+                disabled={!cardBeingEdited || cardImageSaving || cardPriceRefreshing}
+                type="submit"
+              >
+                <Save className="size-3.5" />
+                {cardImageSaving ? "Guardando..." : "Guardar URL"}
               </Button>
             </DialogFooter>
           </form>
